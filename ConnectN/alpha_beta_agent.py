@@ -1,5 +1,8 @@
 import math
 import agent
+import sys
+import board
+
 
 ###########################
 # Alpha-Beta Search Agent #
@@ -27,6 +30,7 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         # Your code here
         # Return the column from a call to max_value
+        return self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
 
     # Get the successors of the given board.
     #
@@ -66,6 +70,21 @@ class AlphaBetaAgent(agent.Agent):
         # if Terminal or depth is 0 return the heuristic and col -1
         # call min_value on all successor boards
         # start pruning
+        if depth == 0 or brd.getOutcome() != 0:
+            return self.heuristic(brd), -1
+        else:
+            value = -sys.maxsize+1
+            col = -1
+            successors = self.get_successors(brd)
+            for b in successors:
+                bValue = self.min_value(b[0], alpha, beta, depth-1)[0]
+                if bValue > value:
+                    value = bValue
+                    col = b[1]
+                if value >= beta:
+                    return value, col
+                alpha = max(alpha, value)
+            return value, col
 
     # Takes in:
     #       A board
@@ -80,9 +99,25 @@ class AlphaBetaAgent(agent.Agent):
         # if Terminal or depth is 0 return the heuristic and col -1
         # call max_value on all successor boards
         # start pruning
+        if depth == 0 or brd.getOutcome() != 0:
+            return self.heuristic(brd), -1
+        else:
+            value = sys.maxsize
+            col = -1
+            successors = self.get_successors(brd)
+            for b in successors:
+                bValue = self.max_value(b[0], alpha, beta, depth-1)[0]
+                if bValue < value:
+                    value = bValue
+                    col = b[1]
+                if value <= alpha:
+                    return value, col
+                beta = min(alpha, value)
+            return value, col
 
     # Calculates the heuristic of the brd
     #
     # Returns the heuristic value
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
+        return -1
