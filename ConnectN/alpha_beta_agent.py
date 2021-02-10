@@ -122,3 +122,8 @@ class AlphaBetaAgent(agent.Agent):
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
         return random.randint(0, 20)
+
+
+# DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT
+# We can optimize the depth value
+THE_AGENT = AlphaBetaAgent("Group09", 4)
