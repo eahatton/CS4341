@@ -26,6 +26,7 @@ class AlphaBetaAgent(agent.Agent):
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
         # Your code here
+        # Return the column from a call to max_value
 
     # Get the successors of the given board.
     #
@@ -51,3 +52,37 @@ class AlphaBetaAgent(agent.Agent):
             # Add board to list of successors
             succ.append((nb,col))
         return succ
+
+    # Takes in:
+    #       A board
+    #       The alpha value
+    #       The Beta value
+    #       The depth we are supposed to look for a move
+    #
+    # Returns a tuple (value, column) where value is the max possible value and column is the column that
+    #           was used to create this play
+    def max_value(self, brd, alpha, beta, depth):
+        """Get the max value"""
+        # if Terminal or depth is 0 return the heuristic and col -1
+        # call min_value on all successor boards
+        # start pruning
+
+    # Takes in:
+    #       A board
+    #       The alpha value
+    #       The Beta value
+    #       The depth we are supposed to look for a move
+    #
+    # Returns a tuple (value, column) where value is the min possible value and column is the column that
+    #           was used to create this play
+    def min_value(self, brd, alpha, beta, depth):
+        """Gets the min value"""
+        # if Terminal or depth is 0 return the heuristic and col -1
+        # call max_value on all successor boards
+        # start pruning
+
+    # Calculates the heuristic of the brd
+    #
+    # Returns the heuristic value
+    def heuristic(self, brd):
+        """Calculate the heuristic of the board"""
