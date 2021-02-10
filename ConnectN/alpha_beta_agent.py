@@ -2,6 +2,7 @@ import math
 import agent
 import sys
 import board
+import random
 
 
 ###########################
@@ -70,7 +71,7 @@ class AlphaBetaAgent(agent.Agent):
         # if Terminal or depth is 0 return the heuristic and col -1
         # call min_value on all successor boards
         # start pruning
-        if depth == 0 or brd.getOutcome() != 0:
+        if depth == 0 or brd.get_outcome() != 0:
             return self.heuristic(brd), -1
         else:
             value = -sys.maxsize+1
@@ -99,7 +100,7 @@ class AlphaBetaAgent(agent.Agent):
         # if Terminal or depth is 0 return the heuristic and col -1
         # call max_value on all successor boards
         # start pruning
-        if depth == 0 or brd.getOutcome() != 0:
+        if depth == 0 or brd.get_outcome() != 0:
             return self.heuristic(brd), -1
         else:
             value = sys.maxsize
@@ -120,4 +121,4 @@ class AlphaBetaAgent(agent.Agent):
     # Returns the heuristic value
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
-        return -1
+        return random.randint(0, 20)
