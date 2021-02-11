@@ -113,7 +113,7 @@ class AlphaBetaAgent(agent.Agent):
                     col = b[1]
                 if value <= alpha:
                     return value, col
-                beta = min(alpha, value)
+                beta = min(beta, value)
             return value, col
 
     # Calculates the heuristic of the brd
