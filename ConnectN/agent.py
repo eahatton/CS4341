@@ -22,7 +22,7 @@ class Agent(object):
         # Agent name
         self.name = name
         # Uninitialized player - will be set upon starting a Game
-        self.player = 0
+        self.player = 1
 
     # Pick a column.
     #

@@ -78,12 +78,14 @@ class AlphaBetaAgent(agent.Agent):
             col = -1
             successors = self.get_successors(brd)
             for b in successors:
+                # b[0].print_it()
+                # print(self.heuristic(b[0]))
                 bValue = self.min_value(b[0], alpha, beta, depth-1)[0]
                 if bValue > value:
                     value = bValue
                     col = b[1]
-                if value >= beta:
-                    return value, col
+                # if value >= beta:
+                #     return value, col
                 alpha = max(alpha, value)
             return value, col
 
@@ -111,8 +113,8 @@ class AlphaBetaAgent(agent.Agent):
                 if bValue < value:
                     value = bValue
                     col = b[1]
-                if value <= alpha:
-                    return value, col
+                # if value <= alpha:
+                #     return value, col
                 beta = min(alpha, value)
             return value, col
 
@@ -121,7 +123,50 @@ class AlphaBetaAgent(agent.Agent):
     # Returns the heuristic value
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
-        return random.randint(0, 20)
+        value = 0
+        for i in range(brd.h):
+            for j in range(brd.w):
+                if brd.board[i][j] != 0:
+                    # print(self.check_line(brd, i, j, 1, 0))
+                    # print(self.check_line(brd, i, j, 1, 1))
+                    # print(self.check_line(brd, i, j, 0, 1))
+                    # print(self.check_line(brd, i, j, 1, -1))
+                    value += self.check_line(brd, i, j, 1, 0)
+                    value += self.check_line(brd, i, j, 1, 1)
+                    value += self.check_line(brd, i, j, 0, 1)
+                    value += self.check_line(brd, i, j, 1, -1)
+        return value
+
+    def check_line(self, brd, i, j, dx, dy):
+        count = 1
+        player = brd.board[i][j]
+        # print("player: ", player)
+        other = False
+        for c in range(1, brd.n):
+            if not other:
+                cx = j + c*dx
+                cy = i + c*dy
+                if cx < 0 or cx >= brd.w or cy < 0 or cy >= brd.h:
+                    other = True
+                    count = 0
+                elif brd.board[cy][cx] == player:
+                    count += 1
+                elif brd.board[cy][cx] != player and brd.board[cy][cx] != 0:
+                    other = True
+                    count = 0
+        if count == 4:
+            count = 50
+        elif count == 3:
+            count = 0.9
+        elif count == 2:
+            count = 0.3
+        elif count == 1:
+            count = 0.1
+        if player != self.player:
+            count *= -1
+        return count
+
+
 
 
 # DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT
