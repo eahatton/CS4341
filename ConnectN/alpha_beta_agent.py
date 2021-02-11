@@ -84,8 +84,8 @@ class AlphaBetaAgent(agent.Agent):
                 if bValue > value:
                     value = bValue
                     col = b[1]
-                # if value >= beta:
-                #     return value, col
+                if value >= beta:
+                    return value, col
                 alpha = max(alpha, value)
             return value, col
 
@@ -113,9 +113,9 @@ class AlphaBetaAgent(agent.Agent):
                 if bValue < value:
                     value = bValue
                     col = b[1]
-                # if value <= alpha:
-                #     return value, col
-                beta = min(alpha, value)
+                if value <= alpha:
+                    return value, col
+                beta = min(beta, value)
             return value, col
 
     # Calculates the heuristic of the brd
