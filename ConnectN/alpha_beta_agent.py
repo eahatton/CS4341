@@ -16,10 +16,12 @@ class AlphaBetaAgent(agent.Agent):
     #
     # PARAM [string] name:      the name of this player
     # PARAM [int]    max_depth: the maximum search depth
-    def __init__(self, name, max_depth):
+    def __init__(self, name, max_depth, heuristic):
         super().__init__(name)
         # Max search depth
         self.max_depth = max_depth
+        # Heuristic algorithm to use
+        self.h = heuristic
 
     # Pick a column.
     #
@@ -123,14 +125,16 @@ class AlphaBetaAgent(agent.Agent):
     # Returns the heuristic value
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
+        if self.h == 1:
+            return self.heuristic1(brd)
+        else:
+            return 0
+
+    def heuristic1(self, brd):
         value = 0
         for i in range(brd.h):
             for j in range(brd.w):
                 if brd.board[i][j] != 0:
-                    # print(self.check_line(brd, i, j, 1, 0))
-                    # print(self.check_line(brd, i, j, 1, 1))
-                    # print(self.check_line(brd, i, j, 0, 1))
-                    # print(self.check_line(brd, i, j, 1, -1))
                     value += self.check_line(brd, i, j, 1, 0)
                     value += self.check_line(brd, i, j, 1, 1)
                     value += self.check_line(brd, i, j, 0, 1)
@@ -155,7 +159,7 @@ class AlphaBetaAgent(agent.Agent):
                     other = True
                     count = 0
         if count == 4:
-            count = 50
+            count = 2.7
         elif count == 3:
             count = 0.9
         elif count == 2:
@@ -166,9 +170,6 @@ class AlphaBetaAgent(agent.Agent):
             count *= -1
         return count
 
-
-
-
 # DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT
 # We can optimize the depth value
-THE_AGENT = AlphaBetaAgent("Group09", 4)
+THE_AGENT = AlphaBetaAgent("Group09", 4, 1)
