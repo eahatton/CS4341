@@ -5,12 +5,14 @@ import board
 import random
 
 
+
 ###########################
 # Alpha-Beta Search Agent #
 ###########################
 
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
+
 
     # Class constructor.
     #
@@ -22,6 +24,7 @@ class AlphaBetaAgent(agent.Agent):
         self.max_depth = max_depth
         # Heuristic algorithm to use
         self.h = heuristic
+        self.numChecks = 0
 
     # Pick a column.
     #
@@ -33,7 +36,9 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         # Your code here
         # Return the column from a call to max_value
-        return self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
+        val = self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
+        print(self.numChecks)
+        return val
 
     # Get the successors of the given board.
     #
@@ -58,7 +63,8 @@ class AlphaBetaAgent(agent.Agent):
             nb.add_token(col)
             # Add board to list of successors
             succ.append((nb,col))
-        return succ
+        # Sort the successors to prune more
+        return self.order_successors(succ)
 
     # Takes in:
     #       A board
@@ -79,9 +85,11 @@ class AlphaBetaAgent(agent.Agent):
             value = -sys.maxsize+1
             col = -1
             successors = self.get_successors(brd)
+            # Boards are sorted by heuristic high to low but we want to feed min the least appealing board for ourselves
+            # first because it is most likely going to be the one we take
+            successors.reverse()
             for b in successors:
-                # b[0].print_it()
-                # print(self.heuristic(b[0]))
+                self.numChecks += 1
                 bValue = self.min_value(b[0], alpha, beta, depth-1)[0]
                 if bValue > value:
                     value = bValue
@@ -111,6 +119,7 @@ class AlphaBetaAgent(agent.Agent):
             col = -1
             successors = self.get_successors(brd)
             for b in successors:
+                self.numChecks += 1
                 bValue = self.max_value(b[0], alpha, beta, depth-1)[0]
                 if bValue < value:
                     value = bValue
@@ -181,6 +190,17 @@ class AlphaBetaAgent(agent.Agent):
         else:
             count = 0
         return count
+
+    def sort_tables(self, val):
+        return self.heuristic(val[0])
+
+    # Sort successors by how good the board already is (heuristic)
+    def order_successors(self, succ):
+        ordered = succ
+        ordered.sort(key=self.sort_tables)
+        return ordered
+
+
 
 # DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT
 # We can optimize the depth value
