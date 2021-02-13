@@ -7,6 +7,25 @@ from datetime import datetime
 # Set random seed for reproducibility
 random.seed(datetime.now())
 
+def runTourney(w,h,t,p1,p2,games):
+    g = game.Game(w,h,t,p1,p2)
+    player1 = 0
+    for a in range(games):
+        winner = g.go()
+        if winner == 1:
+            player1 += 1
+    print("Player 1 was first, and won ", player1, "of ", games)
+    print("Player 2 was second, and won ", games-player1, "of ", games)
+    g = game.Game(w,h,t,p2,p1)
+    player1 = 0
+    for a in range(games):
+        winner = g.go()
+        if winner == 1:
+            player1 += 1
+    print("Player 1 was second, and won ", player1, "of ", games)
+    print("Player 2 was first, and won ", games - player1, "of ", games)
+
+
 #
 # Random vs. Random
 #
@@ -28,11 +47,11 @@ random.seed(datetime.now())
 #
 # Random vs. AlphaBeta
 #
-# g = game.Game(7, # width
-#               6, # height
-#               4, # tokens in a row to win
+# g = game.Game(10, # width
+#               8, # height
+#               5, # tokens in a row to win
 #               agent.RandomAgent("random"),        # player 1
-#               aba.AlphaBetaAgent("alphabeta", 4)) # player 2
+#               aba.AlphaBetaAgent("alphabeta", 4,1)) # player 2
 
 #
 # Human vs. AlphaBeta
@@ -41,7 +60,7 @@ random.seed(datetime.now())
 #               6, # height
 #               4, # tokens in a row to win
 #               agent.InteractiveAgent("human"),    # player 1
-#               aba.AlphaBetaAgent("alphabeta", 4)) # player 2
+#               aba.AlphaBetaAgent("alphabeta", 4,1)) # player 2
 
 #
 # Human vs. Human
@@ -58,8 +77,14 @@ random.seed(datetime.now())
 g = game.Game(7, # width
               6, # height
               4, # tokens in a row to win
-              aba.AlphaBetaAgent("alphabeta1", 4, 1),        # player 1
-              aba.AlphaBetaAgent("alphabeta2", 4, 1))        # player 2
+              aba.AlphaBetaAgent("alphabeta1", 7, 1),        # player 1
+              aba.AlphaBetaAgent("alphabeta2", 6, 1))        # player 2
 
 # Execute the game
 outcome = g.go()
+
+# runTourney(7,6,4,
+#            aba.AlphaBetaAgent("alphabeta1", 6, 1),  # player 1
+#            aba.AlphaBetaAgent("alphabeta2", 4, 1),  # player 2
+#            10)
+

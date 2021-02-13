@@ -3,7 +3,7 @@ import alpha_beta_agent
 
 b1 = [[1,1,1],[0,0,0],[0,0,0]]
 board1 = board.Board(b1, 3, 3, 3)
-aba = alpha_beta_agent.AlphaBetaAgent("aba1",6)
+aba = alpha_beta_agent.AlphaBetaAgent("aba1",6,1)
 
 board1.print_it()
 print("should have a heuristic of 0 and is ", aba.heuristic(board1))
@@ -27,3 +27,10 @@ b3[0][3] = 2
 board3 = board.Board(b3,7,6,4)
 board3.print_it()
 print(aba.go(board3))
+
+b4 = b3
+b4[0][4] = 2
+board4 = board.Board(b4,7,6,4)
+board4.print_it()
+print(aba.heuristic1(board4))
+

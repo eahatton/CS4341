@@ -132,42 +132,54 @@ class AlphaBetaAgent(agent.Agent):
 
     def heuristic1(self, brd):
         value = 0
+        valCheck = -1
         for i in range(brd.h):
+            # if valCheck == value:
+                # break
+            valCheck = value
             for j in range(brd.w):
-                if brd.board[i][j] != 0:
-                    value += self.check_line(brd, i, j, 1, 0)
-                    value += self.check_line(brd, i, j, 1, 1)
-                    value += self.check_line(brd, i, j, 0, 1)
-                    value += self.check_line(brd, i, j, 1, -1)
+                value += self.check_line(brd, i, j, 1, 0)
+                value += self.check_line(brd, i, j, 1, 1)
+                value += self.check_line(brd, i, j, 0, 1)
+                value += self.check_line(brd, i, j, 1, -1)
         return value
 
     def check_line(self, brd, i, j, dx, dy):
-        count = 1
+        count = 0
         player = brd.board[i][j]
         # print("player: ", player)
         other = False
-        for c in range(1, brd.n):
+        for c in range(0, brd.n):
             if not other:
                 cx = j + c*dx
                 cy = i + c*dy
+                # dump out of this line check we went out of bounds
                 if cx < 0 or cx >= brd.w or cy < 0 or cy >= brd.h:
                     other = True
                     count = 0
-                elif brd.board[cy][cx] == player:
-                    count += 1
+                # Same piece or we haven't seen any pieces
+                elif brd.board[cy][cx] == player or player == 0:
+                    if player == 0:
+                        player = brd.board[cy][cx]
+                    if player != 0 and brd.board[cy][cx] == player:
+                        count += 1
+                # Dump out of this line check we found a different piece
                 elif brd.board[cy][cx] != player and brd.board[cy][cx] != 0:
                     other = True
                     count = 0
-        if count == 4:
-            count = 2.7
-        elif count == 3:
-            count = 0.9
-        elif count == 2:
-            count = 0.3
-        elif count == 1:
-            count = 0.1
-        if player != self.player:
-            count *= -1
+        if player != 0:
+            if count == 4:
+                count = 2.7
+            elif count == 3:
+                count = 0.9
+            elif count == 2:
+                count = 0.3
+            elif count == 1:
+                count = 0.1
+            if player != self.player:
+                count *= -1
+        else:
+            count = 0
         return count
 
 # DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT
