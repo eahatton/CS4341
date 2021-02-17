@@ -2,6 +2,7 @@ import random
 import game
 import agent
 import alpha_beta_agent as aba
+import aba2 
 
 # Set random seed for reproducibility
 random.seed()
@@ -30,8 +31,8 @@ random.seed()
 g = game.Game(7, # width
               6, # height
               4, # tokens in a row to win
-              agent.RandomAgent("random"),        # player 1
-              aba.AlphaBetaAgent("alphabeta", 4)) # player 2
+              aba.AlphaBetaAgent("Andrew's", 6),
+              aba2.AlphaBetaAgent2("Evan's",6,1))          # player 2) # player 2
 
 #
 # Human vs. AlphaBeta
@@ -52,7 +53,7 @@ g = game.Game(7, # width
 #               agent.InteractiveAgent("human2"))   # player 2
 
 # Execute the game
-#outcome = g.go()
+outcome = g.go()
 
 def runTourney(w,h,t,p1,p2,games):
     g = game.Game(w,h,t,p1,p2)
@@ -74,7 +75,7 @@ def runTourney(w,h,t,p1,p2,games):
     print("Player 1 was second, and won ", player2, "of ", games)
     print("Player 2 was first, and won ", games - player2, "of ", games)
 
-runTourney(7,6,4,
-           agent.RandomAgent("random"),
-           aba.AlphaBetaAgent("alphabeta2", 4),  # player 2
-           100)
+# runTourney(7,6,4,
+#            agent.RandomAgent("random"),
+#            aba.AlphaBetaAgent("alphabeta2", 4),  # player 2
+#            100)
