@@ -20,6 +20,11 @@ class AlphaBetaAgent(agent.Agent):
         super().__init__(name)
         # Max search depth
         self.max_depth = max_depth
+        self.board = None
+        self.scoreBrd = {
+            1:0,
+            2:0
+        }
 
     # Pick a column.
     #
@@ -116,12 +121,55 @@ class AlphaBetaAgent(agent.Agent):
                 beta = min(beta, value)
             return value, col
 
+    def checkState(self,x,y,dx,dy):
+        state = self.board[y][x]
+        if state ==0: 
+            return
+        cnt = 0
+        for i in range(self.max_depth):
+            nY = y + (dy*i)
+            nX = x + (dx*i)
+            if(nY >= 0 and nX >= 0):
+                if self.board[nY][nX] == state:
+                    cnt+=1
+                elif self.board[nY][nX] == 0:
+                    continue
+                else:
+                    return
+            else:
+                return
+        if cnt == self.max_depth-1:
+            self.scoreBrd[state] = self.scoreBrd[state] + 5
+        else:
+            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.max_depth
+        
+
+    def checkDirection(self,x,y,dx,dy):
+        try:
+            self.board[y + (dy*(self.max_depth-1))][x + (dx*(self.max_depth-1))]
+        except:
+            return
+        self.checkState(x,y,dx,dy)
+
+    def checkAllDirections(self,x,y):
+        self.checkDirection(x,y,1,0)
+        self.checkDirection(x,y,1,1)
+        self.checkDirection(x,y,0,1)
+        self.checkDirection(x,y,1,-1)
+    
     # Calculates the heuristic of the brd
     #
     # Returns the heuristic value
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
-        return random.randint(0, 20)
+        self.board = brd.board
+        for y in range(brd.h):
+            for x in range(brd.w):
+                self.checkAllDirections(x,y)
+        #print(self.scoreBrd)
+        return self.scoreBrd[2] - self.scoreBrd[1]
+
+
 
 
 # DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT

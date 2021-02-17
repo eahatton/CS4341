@@ -4,7 +4,7 @@ import agent
 import alpha_beta_agent as aba
 
 # Set random seed for reproducibility
-random.seed(1)
+random.seed()
 
 # #
 # # Random vs. Random
