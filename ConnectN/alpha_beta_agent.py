@@ -3,6 +3,7 @@ import agent
 import sys
 import board
 import random
+import time
 
 
 
@@ -36,8 +37,11 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         # Your code here
         # Return the column from a call to max_value
+        tic = time.perf_counter()
         val = self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
-        print(self.numChecks)
+        toc = time.perf_counter()
+        print("Took", toc-tic, "to take turn")
+
         return val
 
     # Get the successors of the given board.
@@ -79,12 +83,12 @@ class AlphaBetaAgent(agent.Agent):
         # if Terminal or depth is 0 return the heuristic and col -1
         # call min_value on all successor boards
         # start pruning
-        if depth == 0 or brd.get_outcome() != 0:
+        successors = self.get_successors(brd)
+        if depth == 0 or brd.get_outcome() != 0 or len(successors) == 0:
             return self.heuristic(brd), -1
         else:
             value = -sys.maxsize+1
             col = -1
-            successors = self.get_successors(brd)
             # Boards are sorted by heuristic high to low but we want to feed min the least appealing board for ourselves
             # first because it is most likely going to be the one we take
             successors.reverse()
@@ -112,12 +116,12 @@ class AlphaBetaAgent(agent.Agent):
         # if Terminal or depth is 0 return the heuristic and col -1
         # call max_value on all successor boards
         # start pruning
-        if depth == 0 or brd.get_outcome() != 0:
+        successors = self.get_successors(brd)
+        if depth == 0 or brd.get_outcome() != 0 or len(successors) == 0:
             return self.heuristic(brd), -1
         else:
             value = sys.maxsize
             col = -1
-            successors = self.get_successors(brd)
             for b in successors:
                 self.numChecks += 1
                 bValue = self.max_value(b[0], alpha, beta, depth-1)[0]
@@ -141,11 +145,7 @@ class AlphaBetaAgent(agent.Agent):
 
     def heuristic1(self, brd):
         value = 0
-        valCheck = -1
         for i in range(brd.h):
-            # if valCheck == value:
-                # break
-            valCheck = value
             for j in range(brd.w):
                 value += self.check_line(brd, i, j, 1, 0)
                 value += self.check_line(brd, i, j, 1, 1)
@@ -156,7 +156,6 @@ class AlphaBetaAgent(agent.Agent):
     def check_line(self, brd, i, j, dx, dy):
         count = 0
         player = brd.board[i][j]
-        # print("player: ", player)
         other = False
         for c in range(0, brd.n):
             if not other:
@@ -177,19 +176,15 @@ class AlphaBetaAgent(agent.Agent):
                     other = True
                     count = 0
         if player != 0:
-            if count == 4:
-                count = 2.7
-            elif count == 3:
-                count = 0.9
-            elif count == 2:
-                count = 0.3
-            elif count == 1:
-                count = 0.1
+            # count will be 0,1,3,9,27,81... for count = 0,1,2,3,4,5...
+            count = math.floor(3 ** (count-1))
+            # if the count was done on the opponent negate it
             if player != self.player:
                 count *= -1
         else:
             count = 0
         return count
+
 
     def sort_tables(self, val):
         return self.heuristic(val[0])
