@@ -28,7 +28,6 @@ def runTourney(w,h,t,p1,p2,games):
     print("Player 1 was second, and won ", player2, "of ", games)
     print("Player 2 was first, and won ", games - player2, "of ", games)
 
-
 #
 # Random vs. Random
 #
@@ -63,7 +62,7 @@ def runTourney(w,h,t,p1,p2,games):
 #               6, # height
 #               4, # tokens in a row to win
 #               agent.InteractiveAgent("human"),    # player 1
-#               aba.AlphaBetaAgent("alphabeta", 7,1)) # player 2
+#               aba.AlphaBetaAgent("alphabeta", 4)) # player 2
 
 #
 # Human vs. Human

@@ -26,6 +26,7 @@ class AlphaBetaAgent(agent.Agent):
         self.h = heuristic
         self.numChecks = 0
         self.board = None
+        self.n = None
         self.scoreBrd = {
             1:0,
             2:0
@@ -138,12 +139,20 @@ class AlphaBetaAgent(agent.Agent):
 
     def checkState(self,x,y,dx,dy):
         state = self.board[y][x]
-        if state ==0:
-            return
+        if state == 0:
+            for i in range(self.n):
+                nY = y + (dy*i)
+                nX = x + (dx*i)
+                if self.board[nY][nX] != 0:
+                    state = self.board[nY][nX]
+                    break
         cnt = 0
-        for i in range(self.max_depth):
+        for i in range(self.n):
             nY = y + (dy*i)
             nX = x + (dx*i)
+            state = self.board[y][x]
+            if state ==0:
+                return
             if(nY >= 0 and nX >= 0):
                 if self.board[nY][nX] == state:
                     cnt+=1
@@ -153,15 +162,15 @@ class AlphaBetaAgent(agent.Agent):
                     return
             else:
                 return
-        if cnt == self.max_depth-1:
+        if cnt == self.n:
             self.scoreBrd[state] = self.scoreBrd[state] + 5
         else:
-            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.max_depth
-
+            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.n
+        
 
     def checkDirection(self,x,y,dx,dy):
         try:
-            self.board[y + (dy*(self.max_depth-1))][x + (dx*(self.max_depth-1))]
+            self.board[y + (dy*(self.n-1))][x + (dx*(self.n-1))]
         except:
             return
         self.checkState(x,y,dx,dy)
@@ -171,7 +180,7 @@ class AlphaBetaAgent(agent.Agent):
         self.checkDirection(x,y,1,1)
         self.checkDirection(x,y,0,1)
         self.checkDirection(x,y,1,-1)
-
+    
     # Calculates the heuristic of the brd
     #
     # Returns the heuristic value
@@ -195,6 +204,8 @@ class AlphaBetaAgent(agent.Agent):
     def heuristic2(self, brd):
         """Calculate the heuristic of the board"""
         self.board = brd.board
+        self.n = brd.n
+        self.scoreBrd = {1:0,2:0}
         for y in range(brd.h):
             for x in range(brd.w):
                 self.checkAllDirections(x,y)
