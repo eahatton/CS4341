@@ -12,6 +12,7 @@ import random
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
 
+
     # Class constructor.
     #
     # PARAM [string] name:      the name of this player
@@ -124,12 +125,20 @@ class AlphaBetaAgent(agent.Agent):
 
     def checkState(self,x,y,dx,dy):
         state = self.board[y][x]
-        if state ==0: 
-            return
+        if state == 0:
+            for i in range(self.n):
+                nY = y + (dy*i)
+                nX = x + (dx*i)
+                if self.board[nY][nX] != 0:
+                    state = self.board[nY][nX]
+                    break
         cnt = 0
         for i in range(self.n):
             nY = y + (dy*i)
             nX = x + (dx*i)
+            state = self.board[y][x]
+            if state ==0: 
+                return
             if(nY >= 0 and nX >= 0):
                 if self.board[nY][nX] == state:
                     cnt+=1
@@ -139,7 +148,7 @@ class AlphaBetaAgent(agent.Agent):
                     return
             else:
                 return
-        if cnt == self.n-1:
+        if cnt == self.n:
             self.scoreBrd[state] = self.scoreBrd[state] + 5
         else:
             self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.n
@@ -165,6 +174,7 @@ class AlphaBetaAgent(agent.Agent):
         """Calculate the heuristic of the board"""
         self.board = brd.board
         self.n = brd.n
+        self.scoreBrd = {1:0,2:0}
         for y in range(brd.h):
             for x in range(brd.w):
                 self.checkAllDirections(x,y)
