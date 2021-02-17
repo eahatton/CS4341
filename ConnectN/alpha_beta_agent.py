@@ -21,6 +21,7 @@ class AlphaBetaAgent(agent.Agent):
         # Max search depth
         self.max_depth = max_depth
         self.board = None
+        self.n = None
         self.scoreBrd = {
             1:0,
             2:0
@@ -126,7 +127,7 @@ class AlphaBetaAgent(agent.Agent):
         if state ==0: 
             return
         cnt = 0
-        for i in range(self.max_depth):
+        for i in range(self.n):
             nY = y + (dy*i)
             nX = x + (dx*i)
             if(nY >= 0 and nX >= 0):
@@ -138,15 +139,15 @@ class AlphaBetaAgent(agent.Agent):
                     return
             else:
                 return
-        if cnt == self.max_depth-1:
+        if cnt == self.n-1:
             self.scoreBrd[state] = self.scoreBrd[state] + 5
         else:
-            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.max_depth
+            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.n
         
 
     def checkDirection(self,x,y,dx,dy):
         try:
-            self.board[y + (dy*(self.max_depth-1))][x + (dx*(self.max_depth-1))]
+            self.board[y + (dy*(self.n-1))][x + (dx*(self.n-1))]
         except:
             return
         self.checkState(x,y,dx,dy)
@@ -163,6 +164,7 @@ class AlphaBetaAgent(agent.Agent):
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
         self.board = brd.board
+        self.n = brd.n
         for y in range(brd.h):
             for x in range(brd.w):
                 self.checkAllDirections(x,y)
