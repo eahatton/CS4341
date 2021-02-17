@@ -76,17 +76,17 @@ def runTourney(w,h,t,p1,p2,games):
 #
 # AlphaBeta vs AlphaBeta
 #
-# g = game.Game(10, # width
-#               8, # height
-#               5, # tokens in a row to win
-#               aba.AlphaBetaAgent("alphabeta1", 4, 1),        # player 1
-#               aba.AlphaBetaAgent("alphabeta2", 4, 2))        # player 2
+g = game.Game(7, # width
+              6, # height
+              4, # tokens in a row to win
+              aba.AlphaBetaAgent("alphabeta1", 4, 1),        # player 1
+              aba.AlphaBetaAgent("alphabeta2", 4, 2))        # player 2
 
 # Execute the game
-# outcome = g.go()
+outcome = g.go()
 
-runTourney(10,8,5,
-           agent.RandomAgent("random"),
-           aba.AlphaBetaAgent("alphabeta2", 4, 1),  # player 2
-           100)
+# runTourney(10,8,5,
+#            agent.RandomAgent("random"),
+#            aba.AlphaBetaAgent("alphabeta2", 4, 1),  # player 2
+#            100)
 
