@@ -14,7 +14,6 @@ import time
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
 
-
     # Class constructor.
     #
     # PARAM [string] name:      the name of this player
@@ -26,6 +25,11 @@ class AlphaBetaAgent(agent.Agent):
         # Heuristic algorithm to use
         self.h = heuristic
         self.numChecks = 0
+        self.board = None
+        self.scoreBrd = {
+            1:0,
+            2:0
+        }
 
     # Pick a column.
     #
@@ -93,7 +97,6 @@ class AlphaBetaAgent(agent.Agent):
             # first because it is most likely going to be the one we take
             successors.reverse()
             for b in successors:
-                self.numChecks += 1
                 bValue = self.min_value(b[0], alpha, beta, depth-1)[0]
                 if bValue > value:
                     value = bValue
@@ -122,8 +125,8 @@ class AlphaBetaAgent(agent.Agent):
         else:
             value = sys.maxsize
             col = -1
+            successors = self.get_successors(brd)
             for b in successors:
-                self.numChecks += 1
                 bValue = self.max_value(b[0], alpha, beta, depth-1)[0]
                 if bValue < value:
                     value = bValue
@@ -132,6 +135,42 @@ class AlphaBetaAgent(agent.Agent):
                     return value, col
                 beta = min(beta, value)
             return value, col
+
+    def checkState(self,x,y,dx,dy):
+        state = self.board[y][x]
+        if state ==0:
+            return
+        cnt = 0
+        for i in range(self.max_depth):
+            nY = y + (dy*i)
+            nX = x + (dx*i)
+            if(nY >= 0 and nX >= 0):
+                if self.board[nY][nX] == state:
+                    cnt+=1
+                elif self.board[nY][nX] == 0:
+                    continue
+                else:
+                    return
+            else:
+                return
+        if cnt == self.max_depth-1:
+            self.scoreBrd[state] = self.scoreBrd[state] + 5
+        else:
+            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.max_depth
+
+
+    def checkDirection(self,x,y,dx,dy):
+        try:
+            self.board[y + (dy*(self.max_depth-1))][x + (dx*(self.max_depth-1))]
+        except:
+            return
+        self.checkState(x,y,dx,dy)
+
+    def checkAllDirections(self,x,y):
+        self.checkDirection(x,y,1,0)
+        self.checkDirection(x,y,1,1)
+        self.checkDirection(x,y,0,1)
+        self.checkDirection(x,y,1,-1)
 
     # Calculates the heuristic of the brd
     #
@@ -152,6 +191,15 @@ class AlphaBetaAgent(agent.Agent):
                 value += self.check_line(brd, i, j, 0, 1)
                 value += self.check_line(brd, i, j, 1, -1)
         return value
+
+    def heuristic2(self, brd):
+        """Calculate the heuristic of the board"""
+        self.board = brd.board
+        for y in range(brd.h):
+            for x in range(brd.w):
+                self.checkAllDirections(x,y)
+        #print(self.scoreBrd)
+        return self.scoreBrd[2] - self.scoreBrd[1]
 
     def check_line(self, brd, i, j, dx, dy):
         count = 0
