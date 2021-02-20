@@ -1,8 +1,7 @@
-import math
-import agent
 import sys
-import board
-import random
+import agent
+from . import heuristic1
+from . import heuristic2
 
 
 ###########################
@@ -18,10 +17,14 @@ class AlphaBetaAgent(agent.Agent):
     # PARAM [string] name:      the name of this player
     # PARAM [int]    max_depth: the maximum search depth
     # PARAM [int]    player: 1 for player 1, 2 for player 2
-    def __init__(self, name, max_depth):
+    def __init__(self, name, max_depth, heuristic):
         super().__init__(name)
         # Max search depth
         self.max_depth = max_depth
+        # Which heuristic to run
+        self.h = heuristic
+
+        # Needed for second heuristic, not used in the first
         self.board = None
         self.n = None
         self.scoreBrd = {
@@ -39,6 +42,11 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         # Your code here
         # Return the column from a call to max_value
+        if brd.w == 7:
+            self.max_depth = 6
+        elif brd.w == 10:
+            self.max_depth = 4
+
         return self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
 
     # Get the successors of the given board.
@@ -124,68 +132,19 @@ class AlphaBetaAgent(agent.Agent):
                 beta = min(beta, value)
             return value, col
 
-    def checkState(self,x,y,dx,dy):
-        state = self.board[y][x]
-        if state == 0:
-            for i in range(self.n):
-                nY = y + (dy*i)
-                nX = x + (dx*i)
-                if self.board[nY][nX] != 0:
-                    state = self.board[nY][nX]
-                    break
-        if state == 0:
-            return
-        cnt = 0
-        for i in range(self.n):
-            nY = y + (dy*i)
-            nX = x + (dx*i)
-            if(nY >= 0 and nX >= 0):
-                if self.board[nY][nX] == state:
-                    cnt+=1
-                elif self.board[nY][nX] == 0:
-                    continue
-                else:
-                    return
-            else:
-                return
-        if cnt == self.n:
-            self.scoreBrd[state] = self.scoreBrd[state] + 5
-        else:
-            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.n
-        
 
-    def checkDirection(self,x,y,dx,dy):
-        try:
-            self.board[y + (dy*(self.n-1))][x + (dx*(self.n-1))]
-        except:
-            return
-        self.checkState(x,y,dx,dy)
-
-    def checkAllDirections(self,x,y):
-        self.checkDirection(x,y,1,0)
-        self.checkDirection(x,y,1,1)
-        self.checkDirection(x,y,0,1)
-        self.checkDirection(x,y,1,-1)
     
     # Calculates the heuristic of the brd
     #
     # Returns the heuristic value
     def heuristic(self, brd):
         """Calculate the heuristic of the board"""
-        self.board = brd.board
-        self.n = brd.n
-        self.scoreBrd = {1:0,2:0}
-        for y in range(brd.h):
-            for x in range(brd.w):
-                self.checkAllDirections(x,y)
-        if self.player == 1:
-            return self.scoreBrd[1] - self.scoreBrd[2]
-        else:
-            return self.scoreBrd[2] - self.scoreBrd[1]
-
-
+        if self.h == 1:
+            return heuristic1.heuristic1(self, brd)
+        elif self.h == 2:
+            return heuristic2.heuristic2(self, brd)
 
 
 # DO NOT REMOVE THIS. MAKE SURE IT IS THE LAST THING IN THE SCRIPT
 # We can optimize the depth value
-THE_AGENT = AlphaBetaAgent("Group09", 4)
+THE_AGENT = AlphaBetaAgent("Group09", 4, 1)
