@@ -89,7 +89,6 @@ class TestCharacter(CharacterEntity):
 
 
     def follow_path(self):
-        print(self.path)
         next = self.path[self.path.index((self.x, self.y))+1]
         self.move(next[0]-self.x, next[1]-self.y)
 
