@@ -1,9 +1,13 @@
 import random
 import game
+<<<<<<< HEAD
 import agent
 import alpha_beta_agent as aba
 import aba2 
 from datetime import datetime
+=======
+from ConnectN.Group09 import alpha_beta_agent as aba
+>>>>>>> origin/master
 
 # Set random seed for reproducibility
 random.seed(datetime.now())
@@ -30,10 +34,17 @@ random.seed(datetime.now())
 # Random vs. AlphaBeta
 
 g = game.Game(10, # width
+<<<<<<< HEAD
               10, # height
               5, # tokens in a row to win
               aba.AlphaBetaAgent("Andrew's", 4),
               aba2.AlphaBetaAgent2("Evan's",4,1))          # player 2) # player 2
+=======
+              8, # height
+              4, # tokens in a row to win
+              aba.AlphaBetaAgent("Andrew's", 4,2),
+              aba.AlphaBetaAgent("Evan's",8,1))          # player 2) # player 2
+>>>>>>> origin/master
 
 #
 # Human vs. AlphaBeta

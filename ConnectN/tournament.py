@@ -1,7 +1,7 @@
 import random
 import game
 import agent
-import alpha_beta_agent as aba
+
 
 ######################
 # Play a single game #
