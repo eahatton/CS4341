@@ -40,7 +40,7 @@ class AlphaBetaAgent2(agent.Agent):
         tic = time.perf_counter()
         val = self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
         toc = time.perf_counter()
-        print("Took", toc-tic, "to take turn")
+        print("{} Took".format(self.name), toc-tic, "to take turn")
 
         return val
 

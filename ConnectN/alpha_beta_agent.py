@@ -3,6 +3,8 @@ import agent
 import sys
 import board
 import random
+import time
+
 
 
 ###########################
@@ -39,8 +41,11 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         # Your code here
         # Return the column from a call to max_value
-        return self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
-
+        tic = time.perf_counter()
+        val = self.max_value(brd, -sys.maxsize+1, sys.maxsize, self.max_depth)[1]
+        toc = time.perf_counter()
+        print("{} Took".format(self.name), toc-tic, "to take turn")
+        return val
     # Get the successors of the given board.
     #
     # PARAM [board.Board] brd: the board state
@@ -148,10 +153,11 @@ class AlphaBetaAgent(agent.Agent):
                     return
             else:
                 return
-        if cnt == self.n:
-            self.scoreBrd[state] = self.scoreBrd[state] + 5
-        else:
-            self.scoreBrd[state] = self.scoreBrd[state] + cnt/self.n
+        # if cnt == self.n:
+        #     self.scoreBrd[state] = self.scoreBrd[state] + math.floor(math.pow(self.n,(cnt-1)))
+        # else:
+        #     self.scoreBrd[state] = self.scoreBrd[state] + math.floor(math.pow(self.n, (cnt-1)))
+        self.scoreBrd[state] = self.scoreBrd[state] + math.floor(math.pow(self.n, (cnt-1)))
         
 
     def checkDirection(self,x,y,dx,dy):
