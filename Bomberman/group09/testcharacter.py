@@ -99,4 +99,21 @@ class TestCharacter(CharacterEntity):
     def expectimax(self):
         pass
 
+    def heuristic(self, wrld):
+        score = wrld.scores[self.name]
+        score -= (.1 * (max(abs(self.x-self.goal[0]), abs(self.y, self.goal[1])) ** 3))
+        for dx in range(-2,3):
+            newX = self.x + dx
+            if newX < world.width and newX >= 0:
+                for dy in range(-2,3):
+                    newY = self.y + dy
+                    if newY < world.height() and newY >= 0 and not (dx == 0 and dy == 0):
+                        monsters = wrld.monsters_at(newX,newY)
+                        if monster:
+                            if dx == 1 or dy == 1:
+                                score -= 500
+                            else:
+                                score -= 250
+        return score
+
 
