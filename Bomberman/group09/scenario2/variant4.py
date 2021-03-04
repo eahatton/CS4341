@@ -7,6 +7,7 @@ sys.path.insert(1, '..')
 import random
 from game import Game
 from monsters.selfpreserving_monster import SelfPreservingMonster
+from interactivecharacter import InteractiveCharacter
 
 # TODO This is your code!
 sys.path.insert(1, '../groupNN')
@@ -22,9 +23,14 @@ g.add_monster(SelfPreservingMonster("aggressive", # name
 ))
 
 # TODO Add your character
-g.add_character(TestCharacter("me", # name
-                              "C",  # avatar
-                              0, 0  # position
+# g.add_character(TestCharacter("me", # name
+#                               "C",  # avatar
+#                               0, 0  # position
+# ))
+
+g.add_character(InteractiveCharacter("me", # name
+                                     "C",  # avatar
+                                     0, 0  # position
 ))
 
 # Run!

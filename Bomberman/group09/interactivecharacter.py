@@ -1,9 +1,14 @@
 # This is necessary to find the main code
+from colorama import Fore, Back
+from entity import CharacterEntity
 import sys
+
+from entity import CharacterEntity
+import numpy as np
+
 sys.path.insert(0, '../bomberman')
 # Import necessary stuff
-from entity import CharacterEntity
-from colorama import Fore, Back
+
 
 class InteractiveCharacter(CharacterEntity):
 

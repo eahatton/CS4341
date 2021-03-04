@@ -7,6 +7,7 @@ sys.path.insert(1, '..')
 import random
 from game import Game
 from monsters.stupid_monster import StupidMonster
+from interactivecharacter import InteractiveCharacter
 
 # TODO This is your code!
 sys.path.insert(1, '../groupNN')
@@ -20,11 +21,16 @@ g.add_monster(StupidMonster("stupid", # name
                             3, 9      # position
 ))
 
-# TODO Add your character
+# # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
                               0, 0  # position
 ))
 
+# Uncomment this if you want the interactive character
+# g.add_character(InteractiveCharacter("me", # name
+#                                      "C",  # avatar
+#                                      0, 0  # position
+# ))
 # Run!
-g.go()
+g.go(1)
