@@ -17,7 +17,8 @@ g = Game.fromfile('map.txt')
 # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
-                              0, 0  # position
+                              0, 0,  # position
+                                1
 ))
 
 # Run!
