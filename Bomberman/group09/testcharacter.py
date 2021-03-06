@@ -104,6 +104,8 @@ class TestCharacter(CharacterEntity):
             print("Wall at (0,3)?", wrld.wall_at(0,3))
             self.move(next[0]-self.x, next[1]-self.y)
         else:
+            # Going to place bomb, want to move out of blast zone
+            # Need to stay out for bomb_time + expl_duration + 1 because wall is removed as expl ends
             for i in range(wrld.bomb_time + wrld.expl_duration + 2):
                 if(self.x != 0):
                     self.path.append((self.x-1, self.y-1))
