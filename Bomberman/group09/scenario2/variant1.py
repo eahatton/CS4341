@@ -9,6 +9,7 @@ from game import Game
 # TODO This is your code!
 sys.path.insert(1, '../groupNN')
 from testcharacter import TestCharacter
+from interactivecharacter import InteractiveCharacter
 
 
 # Create the game
@@ -20,6 +21,9 @@ g.add_character(TestCharacter("me", # name
                               0, 0,  # position
                                 1
 ))
+
+#g.add_character(InteractiveCharacter("me", "c", 0,0))
+
 
 # Run!
 g.go()
