@@ -39,7 +39,7 @@ class TestCharacter(CharacterEntity):
 
     def astar(self, wrld):
         if self.path:
-            self.follow_path()
+            self.follow_path(wrld)
         else:
             frontier = PriorityQueue()
             # priority queue will be (priority,(x,y))
@@ -48,7 +48,7 @@ class TestCharacter(CharacterEntity):
             cost_so_far = dict()
             came_from[(self.x,self.y)] = None
             cost_so_far[(self.x,self.y)] = 0
-
+            reached_goal = False
 
             while not frontier.empty():
                 # current is tuple (x,y)
@@ -56,6 +56,7 @@ class TestCharacter(CharacterEntity):
                 current = (cur[0], cur[1])
 
                 if wrld.exit_at(current[0], current[1]):
+                    reached_goal = True
                     break
 
                 for dx in range(-1,2):
@@ -72,9 +73,15 @@ class TestCharacter(CharacterEntity):
                                     frontier.put((priority, (next[0], next[1])))
                                     came_from[next] = current
 
-            
-            self.create_path(came_from)
-            self.follow_path()
+            if reached_goal:
+                self.create_path(came_from)
+                self.follow_path(wrld)
+            else:
+                closest = self.closest_reached(came_from, wrld)
+                self.create_path_dest(came_from,(self.x,self.y),closest)
+                self.path.append("bomb")
+                self.follow_path(wrld)
+
 
     # Finds the diagonal distance from loc (tuple (x,y) of next location) to the exit
     def diag_dist(self, wrld, loc):
@@ -83,15 +90,48 @@ class TestCharacter(CharacterEntity):
 
     def create_path(self, came_from):
         next = self.goal
-        while next is not None:
+        while next != (self.x, self.y):
             self.path.insert(0,next)
             next = came_from[next]
+        
 
 
-    def follow_path(self):
+    def follow_path(self, wrld):
         print(self.path)
-        next = self.path[self.path.index((self.x, self.y))+1]
-        self.move(next[0]-self.x, next[1]-self.y)
+        next = self.path[0]
+        self.path.remove(next)
+        if next != "bomb":
+            print("Wall at (0,3)?", wrld.wall_at(0,3))
+            self.move(next[0]-self.x, next[1]-self.y)
+        else:
+            for i in range(wrld.bomb_time + wrld.expl_duration + 2):
+                if(self.x != 0):
+                    self.path.append((self.x-1, self.y-1))
+                else:
+                    self.path.append((self.x+1, self.y-1))
+            self.place_bomb()
+            print("place bomb and wait")
+
+
+    def closest_reached(self, came_from, wrld):
+        visited = came_from.keys()
+        closest = None
+        dist = sys.maxsize
+        for loc in visited:
+            nextDist = self.diag_dist(wrld, loc)
+            print("Closest so far:", closest, dist, "Next:", loc, nextDist)
+            if nextDist < dist:
+                dist = nextDist
+                closest = loc
+        print(closest)
+        return closest
+
+
+    def create_path_dest(self, came_from, start, end):
+        next = end
+        while next != start:
+            self.path.insert(0,next)
+            next = came_from[next]
 
 
     def minimax(self):
