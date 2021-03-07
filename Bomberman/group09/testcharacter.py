@@ -6,6 +6,7 @@ from entity import CharacterEntity
 from colorama import Fore, Back
 from itertools import product, starmap
 from events import Event
+from sensed_world import SensedWorld
 
 class TestCharacter(CharacterEntity):
     def __init__(self, name, avatar, x, y):
@@ -14,6 +15,8 @@ class TestCharacter(CharacterEntity):
         self.meX, self.meY = 0,0
         self.bX, self.bY = -1,-1
         self.bombT = 10
+        self.totalReward = 0
+        self.rewardGot = 0
 
     def findExitCord(self,wrld):
         for y in range(wrld.height()):
@@ -22,7 +25,7 @@ class TestCharacter(CharacterEntity):
                     return x,y      
     
     def do(self, wrld):
-        self.testFunction(wrld)
+        self.startFunction(wrld)
 
     def startFunction(self,wrld):
         if self.eX == -1 and self.eY == -1:
@@ -166,15 +169,17 @@ class TestCharacter(CharacterEntity):
         self.meX += dx
         self.meY += dy
 
-        self.reward()
 
+        # self.checkAtChest(wrld, self.meX +rdx, self.meY+rdy)
+        # self.checkIfDeath(wrld, self.meX +rdx, self.meY+rdy)
         self.move(rdx,rdy)
 
-    def reward(self):
-        print("Got to reward")
-        if self.meX == self.eX and self.meY == self.eY:
-            print("Got to exit")
-            return 10000 
     
-    def testFunction(self,wrld):
-        
+    def checkAtChest(self, wrld, checkX, checkY):
+        if checkX == self.eX and checkY == self.eY:
+            self.reward += 1000
+        return
+    
+    def closer(self,old_cord,new_cord):
+        # oldDistance = Math.sqrt(old_cord[0]-)
+        return

@@ -20,12 +20,9 @@ from testcharacter import TestCharacter
 g = Game.fromfile('map.txt')
 
 # TODO Add your character
-
+t = TestCharacter("me", "C", 0,0)
 # Uncomment this if you want the test character
-g.add_character(TestCharacter("me", # name
-                              "C",  # avatar
-                              0, 0  # position
-))
+g.add_character(t)
 
 # # Uncomment this if you want the interactive character
 # g.add_character(InteractiveCharacter("me", # name
@@ -40,3 +37,10 @@ g.add_character(TestCharacter("me", # name
 
 # Use this if you want to proceed automatically
 g.go(1)
+for i in g.world.events:
+    if 'killed itself' in i.__str__() or 'was killed by' in i.__str__():
+        t.reward += -1000
+    elif 'found the exit' in i.__str__():
+        t.reward += 1000
+
+print(t.reward)
