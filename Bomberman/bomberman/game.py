@@ -90,28 +90,35 @@ class Game:
                     self.screen.blit(self.bomb_sprite, rect)
         pygame.display.flip()
 
-    def go(self, wait=0):
-        """ Main game loop. """
-
-        if wait is 0:
-            def step():
-                pygame.event.clear()
-                input("Press Enter to continue or CTRL-C to stop...")
-        else:
-            def step():
-                pygame.time.wait(abs(wait))
-
-        colorama.init(autoreset=True)
-        self.display_gui()
-        self.draw()
-        step()
+    def goNoGui(self):
         while not self.done():
             (self.world, self.events) = self.world.next()
+            self.world.next_decisions()
+
+    def go(self, wait=0, gui=False):
+        """ Main game loop. """
+        if gui:
+            self.goNoGui()
+        else:
+            if wait == 0:
+                def step():
+                    pygame.event.clear()
+                    input("Press Enter to continue or CTRL-C to stop...")
+            else:
+                def step():
+                    pygame.time.wait(abs(wait))
+
+            colorama.init(autoreset=True)
             self.display_gui()
             self.draw()
             step()
-            self.world.next_decisions()
-        colorama.deinit()
+            while not self.done():
+                (self.world, self.events) = self.world.next()
+                self.display_gui()
+                self.draw()
+                step()
+                self.world.next_decisions()
+            colorama.deinit()
 
     ###################
     # Private methods #

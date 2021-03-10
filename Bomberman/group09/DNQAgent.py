@@ -4,19 +4,38 @@ sys.path.insert(0,'..bomberman')
 from entity import CharacterEntity
 from itertools import product, starmap
 import math
+from collections import defaultdict
+import numpy as np
+import pandas as pd
+import csv
+from queue import PriorityQueue
+
 class DNQAgent(CharacterEntity):
 
     def __init__(self,name,avatar,x,y,inter):
         CharacterEntity.__init__(self,name,avatar,x,y)
+        self.name = name
+        self.avatar = avatar
+        self.startX, self.startY = x,y
         self.wrld = None
         self.bombPlaced = False
         self.bombTimer = 11
-        self.agentX, self.agentY = x,y
+        self.agentX, self.agentY = self.startX,self.startY
+        self.agentLX,self.agentLY = self.startX,self.startY
         self.exitX, self.exitY = -1,-1
         self.bombX, self.bombY = -1, -1
         self.inter = inter
         self.lastState = ''
         self.lastAction = ''
+        self.QTable = ""
+        # self.makeTable()
+
+    def restart(self):
+        CharacterEntity.__init__(self,self.name,self.avatar,self.startX,self.startY)
+        self.agentX,self.angentY = self.startX,self.startY
+        self.agentLX,self.agentLY = self.startX,self.startY
+        self.bombTimer = 11
+        self.bombX, self.bombY = -1, -1
 
 
     def do(self, wrld):
@@ -26,8 +45,10 @@ class DNQAgent(CharacterEntity):
         if self.inter:
             self.interactiveMoves()
         # else:
-        #     self.QAgent(self)
+        #     self.qLearning()
 
+    def makeTable(self):
+        self.readQTable()
 
     def interactiveMoves(self):
         # Commands
@@ -50,13 +71,20 @@ class DNQAgent(CharacterEntity):
         if bomb:
             self.place_bomb()
 
-    def move(self,dx,dy):
+    def wallAhead(self,dx,dy):
+        try:
+            return self.wrld.wall_at(self.agentX+dx,self.agentY+dy)
+        except:
+            return True
 
-        self.agentX = max(0, min((self.agentX + dx), self.wrld.width()-1))
-        self.agentY = max(0, min((self.agentY + dy), self.wrld.height()-1))
+    def move(self,dx,dy):
+        self.agentLX, self.agentLY = self.agentX,self.agentY
+        if not self.wallAhead(dx,dy):
+            self.agentX = max(0, min((self.agentX + dx), self.wrld.width()-1))
+            self.agentY = max(0, min((self.agentY + dy), self.wrld.height()-1))
         if self.bombPlaced:
             self.bombTimer -= 1
-            if self.bombTimer == 0:
+            if self.bombTimer == -1:
                 self.bombTimer = 11
                 self.bombX,self.bombY = -1,-1
                 self.bombPlaced = False
@@ -70,13 +98,25 @@ class DNQAgent(CharacterEntity):
         # print("Monster Channel: {}".format(self.getMonsterChannel()))
         # print("In Detonation Zone: {}".format(self.inDetonationZone()))
         # print("Exit Path: {}".format(self.getExitPath()))
-        print(self.createState())
+        # print(self.getState())
         super(DNQAgent, self).move(dx,dy)
+        print("Agent Old Coordinates: {} {}".format(self.agentLX, self.agentLY))
+        print("Agent Coordinates: {} {}".format(self.agentX, self.agentY))
+        print("Wall Channel: {}".format(self.getWallChannel()))
+        print("Det Channel: {}".format(self.getDetonationChannel()))
+        print("Explosion Channel: {}".format(self.getExplosionChannel()))
+        print("Exit Path: {}".format(self.getExitPath()))
+        # print("State: {}".format(self.getState()))
+        print(self.getReward())
+        return self.getState(), self.getReward()
+        #
+        #     print("We Died :(")
 
     def place_bomb(self):
         super(DNQAgent, self).place_bomb()
         self.bombX, self.bombY = self.agentX,self.agentY
         self.bombPlaced = True
+        return self.getState(), 1
     # Return a list of all neighbors with their cordinates, if out of bounds, the cell is (-1,-1)
 
     """
@@ -139,11 +179,41 @@ class DNQAgent(CharacterEntity):
                     if self.agentX == self.bombX + i:
                         inRangeFlag = True
             if inRangeFlag:
-                if self.bombTimer < 6:
-                    return (1,1)
-                else: return (1,0)
+                return (1,1)
+                # if self.bombTimer < 6:
+                #     return (1,1)
+                # else: return (1,0)
             else:
                 return (0,0)
+
+    def getDetonationChannel(self):
+        neighboringCells = self.getNeighborcells()
+        detChannel = []
+        aPFlag = True
+        for cell in neighboringCells:
+            aPFlag = True
+            if self.bombTimer >= 3:
+                detChannel.append(0)
+            else:
+                if cell[0] == self.bombX and cell[1] == self.bombY:
+                    detChannel.append(1)
+                elif cell[0] == self.bombX and cell[1] != self.bombY:
+                    for i in range(-5, 5, 1):
+                        if cell[1] == self.bombY + i:
+                            detChannel.append(1)
+                            aPFlag = False
+                    if aPFlag:
+                        detChannel.append(0)
+                elif cell[0] != self.bombX and cell[1] == self.bombY:
+                    for i in range(-5, 5, 1):
+                        if cell[0] == self.bombX + i:
+                            detChannel.append(1)
+                            aPFlag = False
+                    if aPFlag:
+                        detChannel.append(0)
+                else: detChannel.append(0)
+
+        return detChannel
 
 
     def getMonsterChannel(self):
@@ -205,23 +275,153 @@ class DNQAgent(CharacterEntity):
     def getDistance(self, x1,y1,x2,y2):
         return math.sqrt(math.pow(x2-x1,2)+math.pow(y2-y1,2))
 
-    def createState(self):
+    def getState(self):
         state = []
         for i in self.getWallChannel():
             state.append(i)
 
-        for i in self.getExplosionChannel():
-            state.append(i)
+        for i in np.logical_or(self.getExplosionChannel(),self.getDetonationChannel()):
+            if i:
+                state.append(1)
+            else:
+                state.append(0)
 
         for i in self.getMonsterChannel():
             state.append(i)
-
-        inDet = self.inDetonationZone()
-        state.append(inDet[0])
-        state.append(inDet[1])
+        #
+        # inDet = self.inDetonationZone()
+        # state.append(inDet[0])
+        # state.append(inDet[1])
 
         eX,eY = self.getExitPath()
         state.append(eX)
         state.append(eY)
 
         return str(state)
+
+    def checkDeath(self):
+        if self.wrld.characters_at(self.agentX,self.agentY) is None:
+            return False
+        else:
+            return True
+
+    def getReward(self):
+        cur_Distance = self.getDistance(self.agentX,self.agentY,self.exitX,self.exitY)
+        last_Distance = self.getDistance(self.agentLX,self.agentLY,self.exitX,self.exitY)
+        if self.agentLX == self.agentX and self.agentLY == self.agentY:
+            return -1
+        elif cur_Distance > last_Distance:
+            return -1
+        elif cur_Distance < last_Distance:
+            return 1
+        else:
+            return -1
+    
+    def rewardAtWall(self):
+        dx,dy = self.getExitPath()
+        print("dx: {} dy: {}".format(dx,dy))
+        try:
+            return self.wrld.wall_at(self.agentX+dx,self.agentY+dy)
+        except:
+            return False
+
+    def createEpsilonGreedyPolicy(self, epsilon):
+        """
+        Creates an epsilon-greedy policy based
+        on a given Q-function and epsilon.
+
+        Returns a function that takes the state
+        as an input and returns the probabilities
+        for each action in the form of a numpy array
+        of length of the action space(set of possible actions).
+        """
+
+        def policyFunction(state):
+            Action_probabilities = np.ones(10,
+                                           dtype=float) * epsilon / 10
+
+            best_action = np.argmax(self.QTable[state])
+            Action_probabilities[best_action] += (1.0 - epsilon)
+            return Action_probabilities
+
+        return policyFunction
+
+
+    def qLearning(self, discount_factor=0.8 ,
+                  alpha=0.8, epsilon=0.05):
+        policy = self.createEpsilonGreedyPolicy(epsilon)
+        state = self.getState()
+        action_probabilities = policy(state)
+
+        action = np.random.choice(np.arange(
+            len(action_probabilities)),
+            p=action_probabilities
+        )
+
+        self.step(action)
+        next_state = self.getState()
+        reward = self.getReward()
+
+        #TD Update
+        best_next_action = np.argmax(self.QTable[next_state])
+        td_target = reward + discount_factor * self.QTable[next_state][best_next_action]
+        td_delta = td_target - self.QTable[state][action]
+        self.QTable[state][action] += alpha * td_delta
+        self.lastState = state
+        self.lastAction = action
+
+    def weDied(self):
+        self.QTable[self.lastState][self.lastAction] += 0.6 * -1000
+        self.restart()
+
+    def weWon(self):
+        self.QTable[self.lastState][self.lastAction] += 0.6 * 1000
+        self.restart()
+
+    def step(self, action):
+        # self.lastAction = action
+        dx,dy = 0,0
+        if action == 0:
+            return self.move(0,0)
+        elif action == 1:
+            return self.move(0,1)
+        elif action == 2:
+            return self.move(1,0)
+        elif action == 3:
+            return self.move(1,1)
+        elif action == 4:
+            return self.move(0,-1)
+        elif action ==5:
+            return self.move(-1,0)
+        elif action == 6:
+            return self.move(-1,-1)
+        elif action == 7:
+            return self.move(-1,1)
+        elif action == 8:
+            return self.move(1,-1)
+        elif action == 9:
+            return self.place_bomb()
+
+    def saveQTable(self):
+        with open("QTable.csv", "w", newline='') as f:
+            w = csv.writer(f)
+            for key, val in self.QTable.items():
+                w.writerow([key, *val])
+        f.close()
+
+    def readQTable(self,file="QTable.csv"):
+        self.QTable = defaultdict(lambda: np.zeros(10))
+        with open(file,'r') as f:
+            r = csv.reader(f)
+            for k, *v in r:
+                self.QTable[k] = np.array(list(map(float,v)))
+
+    def heuristic(self,a, b):
+        dx = abs(a[0] - b[0])
+        dy = abs(a[1] - b[1])
+        return max(abs(dx), abs(dy))
+
+    #TODO
+    def aStar(self, start, goal):
+        frontier = PriorityQueue()
+        return
