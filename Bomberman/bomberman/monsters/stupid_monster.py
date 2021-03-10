@@ -12,10 +12,10 @@ class StupidMonster(MonsterEntity):
         # Go through neighboring cells
         for dx in [-1, 0, 1]:
             # Avoid out-of-bounds access
-            if ((self.x + dx >= 0) and (self.x + dx < wrld.width())):
+            if ((self.x + dx >= 0) and (self.x + dx < wrld.width()-1)):
                 for dy in [-1, 0, 1]:
                     # Avoid out-of-bounds access
-                    if ((self.y + dy >= 0) and (self.y + dy < wrld.height())):
+                    if ((self.y + dy >= 0) and (self.y + dy < wrld.height()-1)):
                         # Is this cell walkable?
                         if not wrld.wall_at(self.x + dx, self.y + dy):
                             cells.append((dx, dy))
