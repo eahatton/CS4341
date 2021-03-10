@@ -1,10 +1,19 @@
 # This is necessary to find the main code
 import sys
+
 sys.path.insert(0, '../../bomberman')
 sys.path.insert(1, '..')
-
+sys.path.insert(2, '.')
+import numpy as np
+import pandas as pd
+import sys
 # Import necessary stuff
 from game import Game
+from collections import defaultdict
+from real_world import RealWorld
+from events import Event
+import csv
+import numpy as np
 
 # TODO This is your code!
 sys.path.insert(1, '../groupNN')
@@ -19,8 +28,8 @@ from monsters.stupid_monster import StupidMonster
 from monsters.selfpreserving_monster import SelfPreservingMonster
 
 # Create the game
-g = Game.fromfile('map.txt')
-# TODO Add your character
+# g = Game.fromfile('map.txt')
+# # TODO Add your character
 
 # Uncomment this if you want the test character
 # g.add_character(TestCharacter("me",  # name
@@ -30,11 +39,13 @@ g = Game.fromfile('map.txt')
 # ))
 
 # Uncomment this if you want the interactive character
-g.add_character(DNQAgent("me", # name
-                                    "C",  # avatar
-                                    0, 0,  # position
-                                    True # interactive
-))
+# g.add_character(DNQAgent("me",  # name
+#                          "C",  # avatar
+#                          0, 0,  # position
+#                          True  # interactive
+#                          ))
+
+
 # g.add_monster(SelfPreservingMonster("aggressive", # name
 #                             "A",      # avatar
 #                             3, 9,      # position
@@ -46,4 +57,180 @@ g.add_character(DNQAgent("me", # name
 # g.go(0)
 
 # Use this if you want to proceed automatically
-g.go(1)
+# g.go(1)
+
+class QLearning(Game):
+
+    def __init__(self, width, height, max_time, bomb_time, expl_duration, expl_range,
+                 sprite_dir="../../bomberman/sprites/"):
+        super(QLearning, self).__init__(width,height,max_time,bomb_time,expl_duration,expl_range,sprite_dir)
+        self.world = RealWorld.from_params(width, height, max_time, bomb_time, expl_duration, expl_range)
+        # self.sprite_dir = sprite_dir
+        # self.load_gui(width, height)
+        self.QTable = self.addQTable()
+        self.discount_factor = 0.9
+        self.alpha = 0.8
+        self.epsilon = 0.1
+        self.agent = None
+
+    # @classmethod
+    # def fromfile(cls, fname, sprite_dir="../../bomberman/sprites/"):
+    #     super(QLearning, cls).fromfile(fname, sprite_dir)
+
+    def addQTable(self):
+        return self.importQTable()
+        # return defaultdict(lambda: np.zeros(10))
+
+    def add_monster(self, m):
+        super(QLearning, self).add_monster(m)
+        # self.world.add_monster(m)
+
+    def add_character(self, c):
+        super(QLearning, self).add_character(c)
+        self.agent = c
+        if self.agent.inter:
+            self.epsilon = 0.0
+
+
+    def createEpsilonGreedyPolicy(self):
+        epsilon = self.epsilon
+        """
+        Creates an epsilon-greedy policy based
+        on a given Q-function and epsilon.
+
+        Returns a function that takes the state
+        as an input and returns the probabilities
+        for each action in the form of a numpy array
+        of length of the action space(set of possible actions).
+        """
+
+        def policyFunction(state):
+            Action_probabilities = np.ones(10,
+                                           dtype=float) * epsilon / 10
+
+            best_action = np.argmax(self.QTable[state])
+            Action_probabilities[best_action] += (1.0 - epsilon)
+            return Action_probabilities
+
+        return policyFunction
+
+    def qLearning(self, num_episodes):
+        policy = self.createEpsilonGreedyPolicy()
+        winCount = 0
+        loseCount = 0
+        for ith_episode in range(num_episodes+1):
+            if (ith_episode) % 100 == 0:
+                self.saveQTable()
+                print("Episode: {}".format(ith_episode))
+            self.resetEnv()
+            state = self.step(0)[0]
+            # print(state)
+
+            while not self.done():
+                action_probabilities  = policy(state)
+                action = np.random.choice(np.arange(
+                    len(action_probabilities)),
+                    p = action_probabilities
+                )
+                next_state, reward = self.step(action)
+                if self.agent.inter:
+                    print(next_state,reward)
+                for event in self.world.events:
+                    if event.tpe == Event.BOMB_HIT_CHARACTER:
+                        loseCount += 1
+                        reward = -1000
+                    elif event.tpe == Event.CHARACTER_FOUND_EXIT:
+                        winCount += 1
+                        reward = 1000
+
+                best_next_action = np.argmax(self.QTable[next_state])
+                td_target = reward + self.discount_factor * self.QTable[next_state][best_next_action]
+                td_delta = td_target - self.QTable[state][action]
+                self.QTable[state][action] += self.alpha * td_delta
+
+                state = next_state
+        print("Lost: {}".format(loseCount))
+        print("Won: {}".format(winCount))
+
+    def step(self,action):
+        next_state, reward = self.agent.step(action)
+        if self.agent.inter:
+            self.world.printit()
+        (self.world,self.events) = self.world.next()
+        self.world.next_decisions()
+        return next_state, reward
+
+    def resetEnv(self):
+        self.resetMap('map.txt')
+        self.add_character(self.agent)
+        self.agent.restart()
+        (self.world, self.events) = self.world.next()
+        self.world.next_decisions()
+
+    def resetMap(self,file):
+        with open(file, 'r') as fd:
+            # First lines are parameters
+            max_time = int(fd.readline().split()[1])
+            bomb_time = int(fd.readline().split()[1])
+            expl_duration = int(fd.readline().split()[1])
+            expl_range = int(fd.readline().split()[1])
+            # Next line is top border, use it for width
+            width = len(fd.readline()) - 3
+            # Count the rows
+            startpos = fd.tell()
+            height = 0
+            row = fd.readline()
+            while row and row[0] == '|':
+                height = height + 1
+                if len(row) != width + 3:
+                    raise RuntimeError("Row", height, "is not", width, "characters long")
+                row = fd.readline()
+            # Create empty world
+            gm = Game(width, height, max_time, bomb_time, expl_duration, expl_range)
+            # Now parse the data in the world
+            fd.seek(startpos)
+            for y in range(0, height):
+                ln = fd.readline()
+                for x in range(0, width):
+                    if ln[x+1] == 'E':
+                        if not gm.world.exitcell:
+                            gm.world.add_exit(x,y)
+                        else:
+                            raise RuntimeError("There can be only one exit cell, first one found at", x, y)
+                    elif ln[x+1] == 'W':
+                        gm.world.add_wall(x,y)
+            # All done
+            self.world = gm.world
+    def go(self, wait=0):
+        super(QLearning, self).go(wait)
+
+    def saveQTable(self):
+        with open("QTable.csv", "w", newline='') as f:
+            w = csv.writer(f)
+            for key, val in self.QTable.items():
+                w.writerow([key, *val])
+        f.close()
+
+    def importQTable(self, file="QTable.csv"):
+        QTable = defaultdict(lambda: np.zeros(10))
+        try:
+            with open(file, 'r') as f:
+                r = csv.reader(f)
+                for k, *v in r:
+                    QTable[k] = np.array(list(map(float, v)))
+        except Exception as inst:
+            print(type(inst))  # the exception instance
+            print(inst.args)  # arguments stored in .args
+            print(inst)  # __str__ allows args to be printed directly,
+            return QTable
+        return QTable
+
+
+q = QLearning.fromfile('map.txt')
+q.add_character(DNQAgent("me",  # name
+                         "C",  # avatar
+                         0, 0,  # position
+                         False  # interactive
+                         ))
+q.qLearning(1)
+q.saveQTable()
