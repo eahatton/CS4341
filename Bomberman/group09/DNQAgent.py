@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(0,'..bomberman')
+import random
 
 from entity import CharacterEntity
 from itertools import product, starmap
@@ -10,6 +11,7 @@ import pandas as pd
 import csv
 from queue import PriorityQueue
 
+random.seed(1)
 class DNQAgent(CharacterEntity):
 
     def __init__(self,name,avatar,x,y,inter):
@@ -28,9 +30,9 @@ class DNQAgent(CharacterEntity):
         self.lastState = ''
         self.lastAction = ''
         self.QTable = ""
-        # self.makeTable()
+        self.readQTable()
 
-    def restart(self):
+    def restart(self,wrld):
         CharacterEntity.__init__(self,self.name,self.avatar,self.startX,self.startY)
         self.agentX,self.angentY = self.startX,self.startY
         self.agentLX,self.agentLY = self.startX,self.startY
@@ -44,11 +46,8 @@ class DNQAgent(CharacterEntity):
             self.exitX,self.exitY = self.getExitCordinates()
         if self.inter:
             self.interactiveMoves()
-        # else:
-        #     self.qLearning()
-
-    def makeTable(self):
-        self.readQTable()
+        else:
+            self.qLearning()
 
     def interactiveMoves(self):
         # Commands
@@ -91,7 +90,6 @@ class DNQAgent(CharacterEntity):
 
         # Test Prints
         # print("Agent Coordinates: {} {}".format(self.agentX, self.agentY))
-        # print("Bomb Timer: {}".format(self.bombTimer))
         # print("Neighboring Cells: {}".format(self.getNeighborcells()))
         # print("Wall Channel: {}".format(self.getWallChannel()))
         # print("Explosion Channel: {}".format(self.getExplosionChannel()))
@@ -99,24 +97,31 @@ class DNQAgent(CharacterEntity):
         # print("In Detonation Zone: {}".format(self.inDetonationZone()))
         # print("Exit Path: {}".format(self.getExitPath()))
         # print(self.getState())
+        self.lastState = self.getState()
         super(DNQAgent, self).move(dx,dy)
-        print("Agent Old Coordinates: {} {}".format(self.agentLX, self.agentLY))
-        print("Agent Coordinates: {} {}".format(self.agentX, self.agentY))
-        print("Wall Channel: {}".format(self.getWallChannel()))
-        print("Det Channel: {}".format(self.getDetonationChannel()))
-        print("Explosion Channel: {}".format(self.getExplosionChannel()))
-        print("Exit Path: {}".format(self.getExitPath()))
+        # print("Agent Old Coordinates: {} {}".format(self.agentLX, self.agentLY))
+        # print("Agent Coordinates: {} {}".format(self.agentX, self.agentY))
+        # print("Wall Channel: {}".format(self.getWallChannel()))
+        # print("Det Channel: {}".format(self.getDetonationChannel()))
+        # print("Explosion Channel: {}".format(self.getExplosionChannel()))
+        # print("Exit Path: {}".format(self.getExitPath()))
+        # print("Bomb Timer: {}".format(self.bombTimer))
+        # print("Bomb Location: {}, {}".format(self.bombX,self.bombY))
         # print("State: {}".format(self.getState()))
-        print(self.getReward())
         return self.getState(), self.getReward()
         #
         #     print("We Died :(")
 
     def place_bomb(self):
+        reward = 0
         super(DNQAgent, self).place_bomb()
-        self.bombX, self.bombY = self.agentX,self.agentY
-        self.bombPlaced = True
-        return self.getState(), 1
+        if not self.bombPlaced:
+            self.bombX, self.bombY = self.agentX,self.agentY
+            self.bombPlaced = True
+            reward = 1
+        else:
+            reward = 0
+        return self.getState(), reward
     # Return a list of all neighbors with their cordinates, if out of bounds, the cell is (-1,-1)
 
     """
@@ -142,7 +147,7 @@ class DNQAgent(CharacterEntity):
         wallChannel = []
         for cell in neighborCells:
             if cell == [-1,-1]:
-                wallChannel.append(0)
+                wallChannel.append(1)
             else:
                 if self.wrld.wall_at(cell[0],cell[1]):
                     wallChannel.append(1)
@@ -293,17 +298,16 @@ class DNQAgent(CharacterEntity):
         # state.append(inDet[0])
         # state.append(inDet[1])
 
+        if self.bombPlaced:
+            state.append(0)
+        else:
+            state.append(1)
+
         eX,eY = self.getExitPath()
         state.append(eX)
         state.append(eY)
 
         return str(state)
-
-    def checkDeath(self):
-        if self.wrld.characters_at(self.agentX,self.agentY) is None:
-            return False
-        else:
-            return True
 
     def getReward(self):
         cur_Distance = self.getDistance(self.agentX,self.agentY,self.exitX,self.exitY)
@@ -367,19 +371,21 @@ class DNQAgent(CharacterEntity):
         td_target = reward + discount_factor * self.QTable[next_state][best_next_action]
         td_delta = td_target - self.QTable[state][action]
         self.QTable[state][action] += alpha * td_delta
-        self.lastState = state
         self.lastAction = action
-
-    def weDied(self):
-        self.QTable[self.lastState][self.lastAction] += 0.6 * -1000
-        self.restart()
-
-    def weWon(self):
-        self.QTable[self.lastState][self.lastAction] += 0.6 * 1000
-        self.restart()
-
-    def step(self, action):
-        # self.lastAction = action
+    
+    """
+    0 = no move
+    1 = down
+    2 = right
+    3 = down right
+    4 = left
+    5 = Up
+    6 = Up left
+    7 = Up right
+    8 = Down Left
+    9 = Place bomb
+    """
+    def step(self,action):
         dx,dy = 0,0
         if action == 0:
             return self.move(0,0)
@@ -415,13 +421,3 @@ class DNQAgent(CharacterEntity):
             r = csv.reader(f)
             for k, *v in r:
                 self.QTable[k] = np.array(list(map(float,v)))
-
-    def heuristic(self,a, b):
-        dx = abs(a[0] - b[0])
-        dy = abs(a[1] - b[1])
-        return max(abs(dx), abs(dy))
-
-    #TODO
-    def aStar(self, start, goal):
-        frontier = PriorityQueue()
-        return

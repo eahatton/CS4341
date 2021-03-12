@@ -6,7 +6,6 @@ sys.path.insert(1, '..')
 sys.path.insert(2, '.')
 import numpy as np
 import pandas as pd
-import sys
 import copy
 
 # Import necessary stuff
@@ -94,9 +93,9 @@ class QLearning(Game):
         super(QLearning, self).add_character(c)
         self.agent = c
         if self.agent.inter:
-            self.epsilon = 0.0
-            self.alpha = 0
-            self.discount_factor = 0
+            self.epsilon = 0.1
+            self.alpha = 0.0
+            self.discount_factor = 0.0
 
 
     def createEpsilonGreedyPolicy(self,epsilon):
@@ -127,14 +126,15 @@ class QLearning(Game):
         if self.agent.inter:
             num_episodes = 1
         
-        update_on = num_episodes/10
+        update_on = num_episodes-1/4
         for ith_episode in range(num_episodes+1):
-            if (ith_episode) % update_on == 0:
-                self.alpha -= 0.05
-                self.epsilon -= 0.01
-                self.discount_factor -= 0.05
+            if (ith_episode) % 100 == 0:
                 self.saveQTable()
                 print("Episode: {}".format(ith_episode))
+            # if ith_episode % update_on:
+            #     self.alpha -= 0.1
+            #     self.epsilon -= 0.01
+            #     self.discount_factor -= 0.1
             self.resetEnv()
             state = self.agent.getState()
             # print(state)
@@ -154,7 +154,7 @@ class QLearning(Game):
                         reward = -1000
                     elif event.tpe == Event.CHARACTER_FOUND_EXIT:
                         winCount += 1
-                        reward = 1000
+                        reward = 1
                     # elif event.tpe == Event.BOMB_HIT_WALL:
                     #     reward += 50
 
@@ -169,8 +169,8 @@ class QLearning(Game):
 
     def step(self,action):
         if self.agent.inter:
-            b = input("Press Enter to continue or CTRL-C to stop...")
             self.world.printit()
+            input("Press enter to contiue")
         next_state, reward = self.agent.step(action)
         (self.world,self.events) = self.world.next()
         self.world.next_decisions()
@@ -181,6 +181,7 @@ class QLearning(Game):
         self.world.remove_character(self.agent)
         self.agent = copy.copy(self.pureagent)
         self.add_character(self.agent)
+        self.agent.addWorld(self.world)
         (self.world, self.events) = self.world.next()
         self.world.next_decisions()
 
