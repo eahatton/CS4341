@@ -9,7 +9,6 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import csv
-from queue import PriorityQueue
 
 random.seed(1)
 class DNQAgent(CharacterEntity):
@@ -119,9 +118,8 @@ class DNQAgent(CharacterEntity):
         reward = 0
         super(DNQAgent, self).place_bomb()
         if not self.bombPlaced:
-            self.bombX, self.bombY = self.agentX,self.agentY
-            self.bombPlaced = True
             reward = 1
+            self.bombPlaced =  True
         else:
             reward = -1
         return self.getState(), reward
@@ -415,6 +413,7 @@ class DNQAgent(CharacterEntity):
         elif action == 8:
             return self.move(1,-1)
         elif action == 9:
+            self.move(0,0)
             return self.place_bomb()
 
     def saveQTable(self):

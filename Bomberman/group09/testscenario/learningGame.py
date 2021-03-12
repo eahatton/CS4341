@@ -1,3 +1,4 @@
+from math import gamma
 import sys
 import numpy as np 
 import itertools 
@@ -17,7 +18,7 @@ class QTraining(Game):
     def __init__(self, width, height, max_time, bomb_time, expl_duration, expl_range, sprite_dir="../../bomberman/sprites/"):
         super(QTraining, self).__init__(width,height,max_time,bomb_time,expl_duration,expl_range,sprite_dir)
         self.agent = None
-        self.QTable = ""
+        self.QTable = None
         self.readQTable()
 
     def add_character(self, c):
@@ -100,12 +101,13 @@ class QTraining(Game):
             r = csv.reader(f)
             for k, *v in r:
                 self.QTable[k] = np.array(list(map(float,v)))
-
+    def getQTable(self):
+        return self.QTable
 loseCount = 0
 winCount = 0
-epsilon = 0.08
-alpha = 0.8
-discount_factor = 0.8
+epsilon = 0.0
+alpha = 0.9
+gamma = 0.9
 episode_count = 10000
 for episode in range(episode_count):
     if episode % 100 == 0:
@@ -113,14 +115,24 @@ for episode in range(episode_count):
         if winCount / episode_count >= 0.1:
             epsilon -= 0.005
             alpha -= 0.025
-            discount_factor -=0.025
+            gamma -=0.025
+            if epsilon < 0:
+                epsilon = 0
+            if alpha < 0.25:
+                alpha = 0.25
+            if gamma < 0.25:
+                gamma = 0.25
+            print("alpha: {}".format(alpha))
+            print("Epsilon: {}".format(epsilon))
+            print("Gamma: {}".format(gamma))
+
     g = QTraining.fromfile('map.txt')
     agent = DNQAgent("me",
                         "C",
                         0,0,
                         False)
     g.add_character(agent)
-    if g.go(1,False, alpha=alpha,epsilon=epsilon,discount_factor=discount_factor):
+    if g.go(1,False, alpha=alpha,epsilon=epsilon,discount_factor=gamma):
         loseCount += 1
     else:
         winCount +=1
@@ -129,5 +141,5 @@ print("Lost: {}".format(loseCount))
 print("Won: {}".format(winCount))
 print("alpha: {}".format(alpha))
 print("Epsilon: {}".format(epsilon))
-print("Gamma: {}".format(discount_factor))
+print("Gamma: {}".format(gamma))
 
