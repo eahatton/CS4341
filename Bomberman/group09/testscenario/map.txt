@@ -4,10 +4,12 @@ expl_duration 2
 expl_range 4
 +--------+
 |        |
+|WWWWWWWW|
 |        |
 |        |
 |        |
 |        |
 |        |
-|E       |
+|        |
+|       E|
 +--------+

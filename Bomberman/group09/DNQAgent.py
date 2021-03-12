@@ -31,6 +31,7 @@ class DNQAgent(CharacterEntity):
         self.lastAction = ''
         self.QTable = ""
         self.readQTable()
+        self.nextAction = 0
 
     def restart(self,wrld):
         CharacterEntity.__init__(self,self.name,self.avatar,self.startX,self.startY)
@@ -47,7 +48,8 @@ class DNQAgent(CharacterEntity):
         if self.inter:
             self.interactiveMoves()
         else:
-            self.qLearning()
+            # self.qLearning()
+            pass
 
     def interactiveMoves(self):
         # Commands
@@ -97,7 +99,6 @@ class DNQAgent(CharacterEntity):
         # print("In Detonation Zone: {}".format(self.inDetonationZone()))
         # print("Exit Path: {}".format(self.getExitPath()))
         # print(self.getState())
-        self.lastState = self.getState()
         super(DNQAgent, self).move(dx,dy)
         # print("Agent Old Coordinates: {} {}".format(self.agentLX, self.agentLY))
         # print("Agent Coordinates: {} {}".format(self.agentX, self.agentY))
@@ -108,6 +109,7 @@ class DNQAgent(CharacterEntity):
         # print("Bomb Timer: {}".format(self.bombTimer))
         # print("Bomb Location: {}, {}".format(self.bombX,self.bombY))
         # print("State: {}".format(self.getState()))
+        self.lastState = self.getState()
         return self.getState(), self.getReward()
         #
         #     print("We Died :(")
@@ -118,9 +120,9 @@ class DNQAgent(CharacterEntity):
         if not self.bombPlaced:
             self.bombX, self.bombY = self.agentX,self.agentY
             self.bombPlaced = True
-            reward = 1
-        else:
             reward = 0
+        else:
+            reward = -1
         return self.getState(), reward
     # Return a list of all neighbors with their cordinates, if out of bounds, the cell is (-1,-1)
 
@@ -352,7 +354,7 @@ class DNQAgent(CharacterEntity):
 
 
     def qLearning(self, discount_factor=0.8 ,
-                  alpha=0.8, epsilon=0.05):
+                  alpha=0.8, epsilon=0.0):
         policy = self.createEpsilonGreedyPolicy(epsilon)
         state = self.getState()
         action_probabilities = policy(state)
@@ -371,21 +373,21 @@ class DNQAgent(CharacterEntity):
         td_target = reward + discount_factor * self.QTable[next_state][best_next_action]
         td_delta = td_target - self.QTable[state][action]
         self.QTable[state][action] += alpha * td_delta
-        self.lastAction = action
     
     """
     0 = no move
     1 = down
     2 = right
     3 = down right
-    4 = left
-    5 = Up
+    4 = Up
+    5 = Left
     6 = Up left
-    7 = Up right
+    7 = Down right
     8 = Down Left
     9 = Place bomb
     """
     def step(self,action):
+        self.lastAction = action
         dx,dy = 0,0
         if action == 0:
             return self.move(0,0)
@@ -421,3 +423,6 @@ class DNQAgent(CharacterEntity):
             r = csv.reader(f)
             for k, *v in r:
                 self.QTable[k] = np.array(list(map(float,v)))
+
+    def setNextAction(self,action):
+        self.nextAction = action
