@@ -103,19 +103,31 @@ class QTraining(Game):
 
 loseCount = 0
 winCount = 0
-for episode in range(1000):
+epsilon = 0.08
+alpha = 0.8
+discount_factor = 0.8
+episode_count = 10000
+for episode in range(episode_count):
     if episode % 100 == 0:
         print("Game: {}".format(episode))
+        if winCount / episode_count >= 0.1:
+            epsilon -= 0.005
+            alpha -= 0.025
+            discount_factor -=0.025
     g = QTraining.fromfile('map.txt')
     agent = DNQAgent("me",
                         "C",
                         0,0,
                         False)
     g.add_character(agent)
-    if g.go(1,False):
+    if g.go(1,False, alpha=alpha,epsilon=epsilon,discount_factor=discount_factor):
         loseCount += 1
     else:
         winCount +=1
 
 print("Lost: {}".format(loseCount))
 print("Won: {}".format(winCount))
+print("alpha: {}".format(alpha))
+print("Epsilon: {}".format(epsilon))
+print("Gamma: {}".format(discount_factor))
+

@@ -26,6 +26,7 @@ class DNQAgent(CharacterEntity):
         self.agentLX,self.agentLY = self.startX,self.startY
         self.exitX, self.exitY = -1,-1
         self.bombX, self.bombY = -1, -1
+        self.locations = set('0,0')
         self.inter = inter
         self.lastState = ''
         self.lastAction = ''
@@ -120,7 +121,7 @@ class DNQAgent(CharacterEntity):
         if not self.bombPlaced:
             self.bombX, self.bombY = self.agentX,self.agentY
             self.bombPlaced = True
-            reward = 0
+            reward = 1
         else:
             reward = -1
         return self.getState(), reward
@@ -312,12 +313,18 @@ class DNQAgent(CharacterEntity):
         return str(state)
 
     def getReward(self):
+        # self.locations.add("{},{}".format(self.agentX,self.agentY))
+        # if "{},{}".format(self.agentX,self.agentY) in self.locations:
+        #     return -1
         cur_Distance = self.getDistance(self.agentX,self.agentY,self.exitX,self.exitY)
         last_Distance = self.getDistance(self.agentLX,self.agentLY,self.exitX,self.exitY)
         if self.agentLX == self.agentX and self.agentLY == self.agentY:
             return -1
         elif cur_Distance > last_Distance:
-            return -1
+            # if "{},{}".format(self.agentX,self.agentY) in self.locations:
+            #     return -2
+            # else:
+                return -1
         elif cur_Distance < last_Distance:
             return 1
         else:
