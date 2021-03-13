@@ -35,7 +35,7 @@ class DNQAgent(CharacterEntity):
 
     def restart(self,wrld):
         CharacterEntity.__init__(self,self.name,self.avatar,self.startX,self.startY)
-        self.agentX,self.angentY = self.startX,self.startY
+        self.agentX,self.angetY = self.startX,self.startY
         self.agentLX,self.agentLY = self.startX,self.startY
         self.bombTimer = 11
         self.bombX, self.bombY = -1, -1
@@ -118,7 +118,7 @@ class DNQAgent(CharacterEntity):
         reward = 0
         super(DNQAgent, self).place_bomb()
         if not self.bombPlaced:
-            reward = 1
+            reward = 10
             self.bombPlaced =  True
         else:
             reward = -1
@@ -227,7 +227,10 @@ class DNQAgent(CharacterEntity):
         mX,mY = self.getMonsterLocation()
         if mX != -1 and mY != -1:
             pX, pY = self.getMonsterPath()
-            # monsterChannel.append(1/self.getDistance(self.agentX,mX,self.agentY,mY))
+            # try:
+            #     monsterChannel.append(1/self.getDistance(self.agentX,mX,self.agentY,mY))
+            # except:
+            #     monsterChannel.append(0)
             monsterChannel.append(1)
             monsterChannel.append(pX)
             monsterChannel.append(pY)

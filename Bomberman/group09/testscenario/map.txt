@@ -10,8 +10,17 @@ expl_range 4
 |        |
 |        |
 |        |
+|WWWWWWWW|
 |        |
 |        |
 |        |
-|       E|
+|WWWWWWWW|
+|        |
+|        |
+|        |
+|WWWWWWWW|
+|WWWWWWWW|
+|WWWWWWWW|
+|WWWWWWWW|
+|WWWWWWWE|
 +--------+

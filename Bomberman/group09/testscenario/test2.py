@@ -11,7 +11,8 @@ sys.path.insert(1, '../groupNN')
 
 # Uncomment this if you want the empty test character
 from testcharacter import TestCharacter
-
+from monsters.stupid_monster import StupidMonster
+from monsters.selfpreserving_monster import SelfPreservingMonster
 # Uncomment this if you want the interactive character
 from interactivecharacter import InteractiveCharacter
 from DNQAgent import DNQAgent
@@ -26,6 +27,15 @@ agent = DNQAgent("me",  # name
                          True  # interactive
                          )
 # Uncomment this if you want the test character
+g.add_monster(StupidMonster("stupid", # name
+                            "S",      # avatar
+                            3, 5,     # position
+))
+g.add_monster(SelfPreservingMonster("aggressive", # name
+                                    "A",          # avatar
+                                    3, 13,        # position
+                                    2             # detection range
+))
 g.add_character(agent)
 
 g.go(1)

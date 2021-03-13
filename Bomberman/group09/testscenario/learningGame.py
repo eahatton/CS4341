@@ -12,6 +12,8 @@ import random
 from game import Game
 from events import Event
 from DNQAgent import DNQAgent
+from monsters.stupid_monster import StupidMonster
+from monsters.selfpreserving_monster import SelfPreservingMonster
 
 random.seed(1)
 class QTraining(Game):
@@ -56,6 +58,10 @@ class QTraining(Game):
                         print("Our Last Action: {}".format(action))
                 elif event.tpe == Event.CHARACTER_FOUND_EXIT:
                     reward = 100
+                elif event.tpe == Event.BOMB_HIT_MONSTER:
+                    reward = +50
+            if view:
+                print(state,reward)
             best_next_action = np.argmax(self.QTable[next_state])
             td_target = reward + discount_factor * self.QTable[next_state][best_next_action]
             td_delta = td_target - self.QTable[state][action]
@@ -87,7 +93,6 @@ class QTraining(Game):
 
         return policyFunction
 
-
     def saveQTable(self):
         with open("QTable.csv", "w", newline='') as f:
             w = csv.writer(f)
@@ -105,7 +110,7 @@ class QTraining(Game):
         return self.QTable
 loseCount = 0
 winCount = 0
-epsilon = 0.0
+epsilon = 0.02
 alpha = 0.9
 gamma = 0.9
 episode_count = 10000
@@ -131,6 +136,15 @@ for episode in range(episode_count):
                         "C",
                         0,0,
                         False)
+#     g.add_monster(StupidMonster("stupid", # name
+#                             "S",      # avatar
+#                             3, 5,     # position
+# ))
+#     g.add_monster(SelfPreservingMonster("aggressive", # name
+#                                     "A",          # avatar
+#                                     3, 13,        # position
+#                                     2             # detection range
+# ))
     g.add_character(agent)
     if g.go(1,False, alpha=alpha,epsilon=epsilon,discount_factor=gamma):
         loseCount += 1
@@ -142,4 +156,3 @@ print("Won: {}".format(winCount))
 print("alpha: {}".format(alpha))
 print("Epsilon: {}".format(epsilon))
 print("Gamma: {}".format(gamma))
-
