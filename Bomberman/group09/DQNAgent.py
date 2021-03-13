@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(0,'..bomberman')
 import random
 import numpy as np
 import matplotlib
