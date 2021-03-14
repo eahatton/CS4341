@@ -25,6 +25,7 @@ class DeepAgent(CharacterEntity):
         self.agentLX,self.agentLY = self.startX,self.startY
         self.exitX, self.exitY = -1,-1
         self.bombX, self.bombY = -1, -1
+        self.locations = set('0,0')
 
     def do(self, wrld):
         self.wrld = wrld
@@ -56,7 +57,7 @@ class DeepAgent(CharacterEntity):
         reward = 0
         super(DeepAgent, self).place_bomb()
         if not self.bombPlaced:
-            reward = 10
+            reward = 1
             self.bombPlaced =  True
         else:
             reward = -1
@@ -72,22 +73,20 @@ class DeepAgent(CharacterEntity):
         return math.sqrt(math.pow(x2-x1,2)+math.pow(y2-y1,2))
     
     def getReward(self):
+        # print(self.agentX,self.agentY)
         # self.locations.add("{},{}".format(self.agentX,self.agentY))
         # if "{},{}".format(self.agentX,self.agentY) in self.locations:
         #     return -1
         cur_Distance = self.getDistance(self.agentX,self.agentY,self.exitX,self.exitY)
         last_Distance = self.getDistance(self.agentLX,self.agentLY,self.exitX,self.exitY)
         if self.agentLX == self.agentX and self.agentLY == self.agentY:
-            return -1
+            return 0
         elif cur_Distance > last_Distance:
-            # if "{},{}".format(self.agentX,self.agentY) in self.locations:
-            #     return -2
-            # else:
-                return -1
+            return 0
         elif cur_Distance < last_Distance:
-            return 1
+            return 0
         else:
-            return -1
+            return 0
     
     """
     0 = no move

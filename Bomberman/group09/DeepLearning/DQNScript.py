@@ -14,13 +14,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms as T
 
 # Import Game
 
 sys.path.insert(0, '../../bomberman')
 sys.path.insert(1, '..')
-from DeepAgent import DeepAgent
+from DQNGame import DQNGame
 from interactivecharacter import InteractiveCharacter
 from entity import CharacterEntity
 from game import Game
@@ -38,61 +37,10 @@ import math
 
 # plt.ion()
 
-device = torch.device("cuda")
-resize = T.Compose([T.ToPILImage(),
-                    T.Resize(40, interpolation=Image.CUBIC),
-                    T.ToTensor()])
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-
-class DeepQN(Game):
-    def __init__(self, width, height, max_time, bomb_time, expl_duration, expl_range, sprite_dir="../../bomberman/sprites/"):
-        super(DeepQN, self).__init__(width,height,max_time,bomb_time,expl_duration,expl_range,sprite_dir)
-        self.agent = None
-        self.add_character()
-
-    def add_character(self):
-        self.agent = DeepAgent("me", # name
-                                    "C",  # avatar
-                                     0, 0,  # position
-    )
-        super(DeepQN, self).add_character(self.agent)
-
-    def get_frame(self):
-        """ Main game loop. """
-        def step():
-            self.capture_screen()
-            pygame.time.wait(abs(0))
-
-        colorama.init(autoreset=True)
-        (self.world, self.events) = self.world.next()
-        self.display_gui()
-        # self.draw()
-        step()
-        self.world.next_decisions()
-        colorama.deinit()
-
-        return self.capture_screen(), self.done()
-
-
-    def capture_screen(self):
-        pygame.image.save(self.screen,"imgs/0.jpeg")
-        np_image = self.get_jpg("imgs/0.jpeg")
-        screen = torch.from_numpy(np_image)
-        return resize(screen).unsqueeze(0).to(device)
-    
-    def get_jpg(self,file):
-        image = Image.open(file)
-        img_data = np.array(image)
-        img_data = self.rgb2gray(img_data)
-        rescaled = (255.0 / img_data.max() * (img_data - img_data.min())).astype(np.uint8)
-        return rescaled
-
-    def rgb2gray(self,rgb):
-        r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
-        gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-        return gray
 
 
 class DQN(nn.Module):
@@ -122,6 +70,7 @@ class DQN(nn.Module):
         x = F.relu(self.bn2(self.conv2(x)))
         x = F.relu(self.bn3(self.conv3(x)))
         return self.head(x.view(x.size(0), -1))
+
 class ReplayMemory(object):
 
     def __init__(self, capacity):
@@ -143,25 +92,27 @@ class ReplayMemory(object):
         return len(self.memory)
     
 
-BATCH_SIZE = 128
-GAMMA = 0.999
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 200
-TARGET_UPDATE = 10
+class DQNShell(DQN,ReplayMemory):
+     def __init__(self):
+        super(DQN).__init__()
 
-# Get screen size so that we can initialize layers correctly based on shape
-# returned from AI gym. Typical dimensions at this point are close to 3x40x90
-# which is the result of a clamped and down-scaled render buffer in get_screen()
-game = DeepQN.fromfile('map.txt')
+game = DQNGame.fromfile('map.txt')
 init_screen = game.get_frame()[0]
 _, _, screen_height, screen_width = init_screen.shape
-
+print(DQNShell.__mro__)
 n_actions = 10
-
+    
 policy_net = DQN(screen_height, screen_width, n_actions).to(device)
 target_net = DQN(screen_height, screen_width, n_actions).to(device)
-target_net.load_state_dict(policy_net.state_dict())
+try:
+    policy_net.load_state_dict(torch.load("policy_net.pt"))
+    target_net.load_state_dict(torch.load("target_net.pt"))
+    print("Loaded policy")
+except:
+    print("Cound't Load policy")
+    target_net.load_state_dict(policy_net.state_dict())
+
+policy_net.eval()
 target_net.eval()
 
 optimizer = optim.RMSprop(policy_net.parameters())
@@ -171,7 +122,11 @@ memory = ReplayMemory(10000)
 steps_done = 0
 
 
-def select_action(state):
+def select_action(state,EPS_DECAY = 200,
+                        EPS_END = 0.05,
+                        EPS_START = 0.9
+
+):
     global steps_done
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
@@ -189,6 +144,32 @@ def select_action(state):
 
 episode_durations = []
 
+def plot_res(values, title=''):   
+    ''' Plot the reward curve and histogram of results over time.'''    
+    # Define the figure
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(12,5))
+    f.suptitle(title)
+    ax[0].plot(values, label='score per run')
+    ax[0].axhline(195, c='red',ls='--', label='goal')
+    ax[0].set_xlabel('Episodes')
+    ax[0].set_ylabel('Reward')
+    x = range(len(values))
+    ax[0].legend()
+    # Calculate the trend
+    try:
+        z = np.polyfit(x, values, 1)
+        p = np.poly1d(z)
+        ax[0].plot(x,p(x),"--", label='trend')
+    except:
+        print('')
+    
+    # Plot the histogram of results
+    ax[1].hist(values[-50:])
+    ax[1].axvline(195, c='red', label='goal')
+    ax[1].set_xlabel('Scores per Last 50 Episodes')
+    ax[1].set_ylabel('Frequency')
+    ax[1].legend()
+    plt.show()
 
 def plot_durations():
     plt.figure(2)
@@ -211,7 +192,10 @@ def plot_durations():
 
 
 
-def optimize_model():
+def optimize_model(BATCH_SIZE = 128,
+                GAMMA = 0.9
+
+):
     if len(memory) < BATCH_SIZE:
         return
     transitions = memory.sample(BATCH_SIZE)
@@ -255,59 +239,69 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 300
-winCount = 0
-loseCount = 0
-for i_episode in range(num_episodes):
-    print("Lost: {}".format(loseCount))
-    print("Won: {}".format(winCount))
-    # Initialize the environment and state
-    last_screen,reward = game.get_frame() 
-    game = DeepQN.fromfile("map.txt")
-    world = game.world
-    current_screen,reward = game.get_frame()
-    state = current_screen - last_screen
-    
-    for t in count():
-        # Select and perform an action
-        action = select_action(state)
-        reward = game.agent.step(action.item())
 
-        # Observe new state
-        last_screen = current_screen
-        current_screen, done = game.get_frame()
-        for event in world.events:
-            if event.tpe == Event.BOMB_HIT_CHARACTER:
-                loseCount += 1
-                reward = -1000
-            elif event.tpe == Event.CHARACTER_FOUND_EXIT:
-                winCount +=1
-                reward = 1000
-        reward = torch.tensor([reward], device=device)        
-        if not done:
-            next_state = current_screen - last_screen
-        else:
-            next_state = None
 
-        # Store the transition in memory
-        memory.push(state, action, next_state, reward)
+def train_NN(num_episodes,TARGET_UPDATE = 10
+):
+    winCount = 0
+    loseCount = 0
+    for i_episode in range(num_episodes):
+        print("Lost: {}".format(loseCount))
+        print("Won: {}".format(winCount))
+        # Initialize the environment and state
+        game = DQNGame.fromfile("map.txt")
+        last_screen = game.get_frame()[0]
+        current_screen = game.get_frame()[0]
+        state = current_screen - last_screen
+        for t in count():
+            # Select and perform an action
+            action = select_action(state)
+            reward = game.agent.step(action.item())
 
-        # Move to the next state
-        state = next_state
+            # Observe new state
+            last_screen = current_screen
+            current_screen, done = game.get_frame()
+            for event in game.world.events:
+                if event.tpe == Event.BOMB_HIT_CHARACTER:
+                    loseCount += 1
+                    reward = -1
+                elif event.tpe == Event.CHARACTER_FOUND_EXIT:
+                    winCount +=1
+                    reward = 1
+            reward = torch.tensor([reward], device=device)        
+            if not done:
+                next_state = current_screen - last_screen
+            else:
+                next_state = None
 
-        # Perform one step of the optimization (on the target network)
-        optimize_model()
-        if done:
-            episode_durations.append(t + 1)
-            # plot_durations()
-            break
-    # Update the target network, copying all weights and biases in DQN
-    if i_episode % TARGET_UPDATE == 0:
-        target_net.load_state_dict(policy_net.state_dict())
+            # Store the transition in memory
+            memory.push(state, action, next_state, reward)
+
+            # Move to the next state
+            state = next_state
+
+            # Perform one step of the optimization (on the target network)
+            optimize_model()
+            if done:
+                episode_durations.append(t + 1)
+                # plot_durations()
+                break
+        # Update the target network, copying all weights and biases in DQN
+        if i_episode % TARGET_UPDATE == 0:
+            target_net.load_state_dict(policy_net.state_dict())
+
+        # Save our networks
+        if i_episode % num_episodes*.1 == 0:
+            torch.save(policy_net.state_dict(), 'policy_net.pt')
+            torch.save(target_net.state_dict(), 'target_net.pt')
+    return winCount,loseCount
 
 print('Complete')
+torch.save(policy_net.state_dict(), 'policy_net.pt')
+torch.save(target_net.state_dict(), 'target_net.pt')
 # plt.ioff()
 # plt.show()
 
+winCount, loseCount = train_NN(100)
 print("Lost: {}".format(loseCount))
 print("Won: {}".format(winCount))
