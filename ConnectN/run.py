@@ -1,6 +1,7 @@
 import random
 import game
-from ConnectN.Group09 import alpha_beta_agent as aba
+from Group09 import alpha_beta_agent as aba
+import agent
 
 # Set random seed for reproducibility
 random.seed()
@@ -26,20 +27,20 @@ random.seed()
 
 # Random vs. AlphaBeta
 
-g = game.Game(10, # width
-              8, # height
-              4, # tokens in a row to win
-              aba.AlphaBetaAgent("Andrew's", 4,2),
-              aba.AlphaBetaAgent("Evan's",8,1))          # player 2) # player 2
+#g = game.Game(7, # width
+#              6, # height
+#              4, # tokens in a row to win
+#              aba.AlphaBetaAgent("Andrew's", 4,2),
+#              aba.AlphaBetaAgent("Evan's",4,1))          # player 2) # player 2
 
 #
 # Human vs. AlphaBeta
 #
-# g = game.Game(7, # width
-#               6, # height
-#               4, # tokens in a row to win
-#               agent.InteractiveAgent("human"),    # player 1
-#               aba.AlphaBetaAgent("alphabeta", 4)) # player 2
+g = game.Game(7, # width
+               6, # height
+               4, # tokens in a row to win
+               agent.InteractiveAgent("human"),    # player 1
+               aba.AlphaBetaAgent("alphabeta", 4, 1)) # player 2
 
 #
 # Human vs. Human

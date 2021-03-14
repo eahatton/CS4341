@@ -58,6 +58,8 @@ class SelfPreservingMonster(MonsterEntity):
         """Pick an action for the monster"""
         # If a character is in the neighborhood, go to it
         (found, dx, dy) = self.look_for_character(wrld)
+        self.dx = dx
+        self.dy = dy
         if found and not self.must_change_direction(wrld):
             self.move(dx, dy)
             return

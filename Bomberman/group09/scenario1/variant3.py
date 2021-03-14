@@ -19,7 +19,8 @@ from testcharacter import TestCharacter
 exited = 0
 bombed = 0
 killed = 0
-for i in range(1000):
+
+for i in range(10):
     # Create the game
     random.seed(datetime.now()) # TODO Change this if you want different random choices
     g = Game.fromfile('map.txt')
@@ -37,7 +38,7 @@ for i in range(1000):
     ))
     
     # Run!
-    g.go(10)
+    g.go(1)
 
     events = g.world.events
     for e in events:
@@ -46,7 +47,8 @@ for i in range(1000):
         elif e.tpe == Event.BOMB_HIT_CHARACTER:
             bombed += 1
         elif e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
-            killed += 1;
+            killed += 1
+
 
 print("Exited:", exited)
 print("Bombed:", bombed)

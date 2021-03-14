@@ -163,14 +163,23 @@ class TestCharacter(CharacterEntity):
 #            return
         dx = next[0] - self.x
         dy = next[1] - self.y
-        for i in range(-2,3):
-            for j in range(-2,3):
+        for i in range(-2, 3):
+            for j in range(-2, 3):
                 check_x = next[0] + i
                 check_y = next[1] + j
                 if wrld.monsters_at(check_x, check_y):
                     self.path.clear()
-                    dx = int(copysign(1,-i))
-                    dy= int(copysign(1,-j))
+                    if j != 0:
+                        dx = int(copysign(1,3.5-self.x))
+                    else:
+                        dx = int(copysign(1,-i))
+                    dy = int(copysign(1,-j))
+                    # Make sure we are moving and not just pushing against a wall
+                    if self.x + dx < 0 or self.x + dx >= wrld.width():
+                        dx = 0
+                    if self.y + dy < 0 or self.y + dy >= wrld.height():
+                        dx = int(copysign(1,-i))
+                        dy = 0
                     """
                     if i == 0:
                         # you are below the monster move down
@@ -199,10 +208,10 @@ class TestCharacter(CharacterEntity):
                         else:
                             dx = 0
                             dy = 0
-                    if self.x + dx < 0 or self.x + dx >= wrld.width() and self.check_bombs((self.x, self.y), wrld):
-                        dx = -dx
-                    if self.y + dy < 0 or self.y + dy >= wrld.height() and self.check_bombs((self.x, self.y), wrld):
-                        dy = -dy
+                        if self.x + dx < 0 or self.x + dx >= wrld.width() and self.check_bombs((self.x, self.y), wrld):
+                            dx = -dx
+                        if self.y + dy < 0 or self.y + dy >= wrld.height() and self.check_bombs((self.x, self.y), wrld):
+                            dy = -dy
                     if self.x + dx < 0 or self.x + dx >= wrld.width():
                         dx = 0
                     if self.y + dy < 0 or self.y + dy >= wrld.height():
@@ -212,9 +221,10 @@ class TestCharacter(CharacterEntity):
                             dx = 0
                         elif not wrld.wall_at(self.x + dx, self.y):
                             dy = 0
-                    self.bomb(wrld)
+
                     self.path.clear()
-                    self.move(dx,dy)
+                    self.move(dx, dy)
+                    self.bomb(wrld)
                     return
         if self.check_bombs(next, wrld):
             for i in range(-1,2):
@@ -242,8 +252,9 @@ class TestCharacter(CharacterEntity):
         self.follow_path(wrld)
 
     def bomb(self, wrld):
-        self.bombs.append((self.x, self.y, wrld.bomb_time))
-        self.place_bomb()
+        if len(self.bombs) == 0:
+            self.bombs.append((self.x, self.y, wrld.bomb_time))
+            self.place_bomb()
 
     def update_bombs(self):
         if len(self.bombs) > 0:
