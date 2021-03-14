@@ -90,12 +90,7 @@ class Game:
                     self.screen.blit(self.bomb_sprite, rect)
         pygame.display.flip()
 
-    def goNoGui(self):
-        while not self.done():
-            (self.world, self.events) = self.world.next()
-            self.world.next_decisions()
-
-    def go(self, wait=0, gui=False):
+    def go(self, wait=0):
         """ Main game loop. """
         if gui:
             self.goNoGui()
@@ -112,6 +107,7 @@ class Game:
             self.display_gui()
             self.draw()
             step()
+            pygame.image.save(self.screen,"screenshot.jpg")
             while not self.done():
                 (self.world, self.events) = self.world.next()
                 self.display_gui()
