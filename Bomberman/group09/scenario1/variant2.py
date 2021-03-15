@@ -20,7 +20,7 @@ exit = 0
 killed_self = 0
 killed_by_monster = 0
 
-for i in range(10):
+for i in range(1000):
     # Create the game
     random.seed(datetime.now()) # TODO Change this if you want different random choices
     g = Game.fromfile('map.txt')
