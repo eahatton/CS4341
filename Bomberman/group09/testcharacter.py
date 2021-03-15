@@ -40,9 +40,10 @@ class TestCharacter(CharacterEntity):
 
 
     def astar(self, wrld):
-        if self.path:
+        if len(self.path) > 0:
             self.smart_follow(wrld)
         else:
+            print("Need to find a new path")
             frontier = PriorityQueue()
             # priority queue will be (priority,(x,y))
             frontier.put((0,(self.x,self.y)))
@@ -69,12 +70,11 @@ class TestCharacter(CharacterEntity):
                                 next = (current[0]+dx, current[1]+dy)
                                 # Cost to move one square is always 1
                                 new_cost = cost_so_far[current] + 1
-                                if next not in cost_so_far.keys()  or new_cost <= cost_so_far[next]:
+                                if next not in cost_so_far.keys() or new_cost < cost_so_far[next]:
                                     cost_so_far[next] = new_cost
                                     priority = new_cost + self.diag_dist(wrld, next)
                                     frontier.put((priority, (next[0], next[1])))
                                     came_from[next] = current
-
             if reached_goal:
                 self.create_path(came_from)
                 self.smart_follow(wrld)
@@ -95,6 +95,12 @@ class TestCharacter(CharacterEntity):
         while next != (self.x, self.y):
             self.path.insert(0,next)
             next = came_from[next]
+            # if len(self.path) > 1 and (self.path[0] != "bomb" and self.path[1] != "bomb"):
+            #     old_dx = self.path[1][0] - self.path[0][0]
+            #     cur_dx = self.path[0][0] - next[0]
+            #     print(old_dx, cur_dx)
+            #     if old_dx != cur_dx:
+            #         self.path.insert(0,"bomb")
         
 
     def follow_path(self, wrld):
@@ -133,12 +139,12 @@ class TestCharacter(CharacterEntity):
 
 
     def smart_follow(self, wrld):
-        print(self.path)
         self.update_bombs()
         next = self.path[0]
         if next == "bomb":
             self.follow_path(wrld)
             return
+        look_for_bombs = True
 #        if self.check_bombs(next, wrld):
 #            for i in range(-1,2):
 #                for j in range(-1,2):
@@ -168,6 +174,7 @@ class TestCharacter(CharacterEntity):
                 check_x = next[0] + i
                 check_y = next[1] + j
                 if wrld.monsters_at(check_x, check_y):
+                    look_for_bombs = False
                     self.path.clear()
                     if j != 0:
                         dx = int(copysign(1,3.5-self.x))
@@ -175,11 +182,7 @@ class TestCharacter(CharacterEntity):
                         dx = int(copysign(1,-i))
                     dy = int(copysign(1,-j))
                     # Make sure we are moving and not just pushing against a wall
-                    if self.x + dx < 0 or self.x + dx >= wrld.width():
-                        dx = 0
-                    if self.y + dy < 0 or self.y + dy >= wrld.height():
-                        dx = int(copysign(1,-i))
-                        dy = 0
+
                     """
                     if i == 0:
                         # you are below the monster move down
@@ -208,10 +211,7 @@ class TestCharacter(CharacterEntity):
                         else:
                             dx = 0
                             dy = 0
-                        if self.x + dx < 0 or self.x + dx >= wrld.width() and self.check_bombs((self.x, self.y), wrld):
-                            dx = -dx
-                        if self.y + dy < 0 or self.y + dy >= wrld.height() and self.check_bombs((self.x, self.y), wrld):
-                            dy = -dy
+
                     if self.x + dx < 0 or self.x + dx >= wrld.width():
                         dx = 0
                     if self.y + dy < 0 or self.y + dy >= wrld.height():
@@ -221,12 +221,12 @@ class TestCharacter(CharacterEntity):
                             dx = 0
                         elif not wrld.wall_at(self.x + dx, self.y):
                             dy = 0
-
+                    print("moving to ", self.x+dx, self.y+dy, " in ", dx,dy)
                     self.path.clear()
                     self.move(dx, dy)
                     self.bomb(wrld)
                     return
-        if self.check_bombs(next, wrld):
+        if self.check_bombs(next, wrld) and look_for_bombs:
             for i in range(-1,2):
                 for j in range(-1,2):
                     check_x = self.x + i
