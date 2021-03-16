@@ -7,6 +7,7 @@ sys.path.insert(1, '..')
 import random
 from game import Game
 from monsters.stupid_monster import StupidMonster
+from events import Event
 
 # TODO This is your code!
 sys.path.insert(1, '../groupNN')
@@ -14,20 +15,39 @@ from testcharacter import TestCharacter
 
 from datetime import datetime
 
-# Create the game
-random.seed(datetime.now()) # TODO Change this if you want different random choices
-g = Game.fromfile('map.txt')
-g.add_monster(StupidMonster("stupid", # name
-                            "S",      # avatar
-                            3, 9      # position
-))
+exited = 0
+killed = 0
+bombed = 0
 
-# TODO Add your character
-g.add_character(TestCharacter("me", # name
-                              "C",  # avatar
-                              0, 0,  # position
-                              1
-))
+for i in range(100):
+    # Create the game
+    random.seed(datetime.now()) # TODO Change this if you want different random choices
+    g = Game.fromfile('map.txt')
+    g.add_monster(StupidMonster("stupid", # name
+                                "S",      # avatar
+                                3, 9      # position
+    ))
+    
+    # TODO Add your character
+    g.add_character(TestCharacter("me", # name
+                                  "C",  # avatar
+                                  0, 0,  # position
+                                  1
+    ))
+    
+    # Run!
+    g.go(1)
 
-# Run!
-g.go(1)
+    events = g.world.events
+    for e in events:
+        if e.tpe == Event.CHARACTER_FOUND_EXIT:
+            exited += 1
+        elif e.tpe == Event.BOMB_HIT_CHARACTER:
+            bombed += 1
+        elif e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
+            killed += 1
+
+print("Exited:", exited)
+print("Bombed:", bombed)
+print("Killed:", killed)
+
