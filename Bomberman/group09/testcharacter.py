@@ -5,6 +5,7 @@ sys.path.insert(0, '../bomberman')
 from entity import CharacterEntity
 from colorama import Fore, Back
 from queue import PriorityQueue
+import math
 from math import copysign
 
 class TestCharacter(CharacterEntity):
@@ -108,7 +109,7 @@ class TestCharacter(CharacterEntity):
         self.path.remove(next)
         if next != "bomb":
             self.move(next[0]-self.x, next[1]-self.y)
-        else:
+        elif len(self.bombs) == 0:
             # Going to place bomb, want to move out of blast zone
             # Need to stay out for bomb_time + expl_duration + 1 because wall is removed as expl ends
             for i in range(wrld.bomb_time + wrld.expl_duration + 2):
@@ -125,7 +126,7 @@ class TestCharacter(CharacterEntity):
         dist = sys.maxsize
         for loc in visited:
             nextDist = self.diag_dist(wrld, loc)
-            if nextDist < dist:
+            if nextDist <= dist:
                 dist = nextDist
                 closest = loc
         return closest
@@ -168,6 +169,7 @@ class TestCharacter(CharacterEntity):
             #                 print("Dist to exit:", new_dist)
             #                 if dist_to_monster >= 4 and new_dist < closest:
             #                     direction = (i,j)
+            """
             if self.y - monster[1] != 0:
                 dx = int(copysign(1,3.5-self.x))
             else:
@@ -180,7 +182,7 @@ class TestCharacter(CharacterEntity):
                 dx = int(copysign(1, self.x - monster[0]))
                 dy = 0
             # Check if monster is pushing you into an explosion
-            if self.check_bombs((self.x + dx, self.y + dy), wrld):
+            if self.check_bombs((self.x + dx, self.y + dy), wrld): # and not wrld.wall_at(self.x + dx, self.y + dy):
                 if not self.check_bombs((self.x, self.y + dy), wrld):
                     dx = 0
                 elif not self.check_bombs((self.x + dx, self.y), wrld):
@@ -188,11 +190,10 @@ class TestCharacter(CharacterEntity):
                 else:
                     dx = 0
                     dy = 0
-                if self.x + dx < 0 or self.x + dx >= wrld.width() and self.check_bombs((self.x, self.y), wrld):
+                if self.check_bombs((self.x, self.y), wrld):
                     dx = -dx
-                if self.y + dy < 0 or self.y + dy >= wrld.height() and self.check_bombs((self.x, self.y), wrld):
                     dy = -dy
-
+           
             if self.x + dx < 0 or self.x + dx >= wrld.width():
                 dx = 0
             if self.y + dy < 0 or self.y + dy >= wrld.height():
@@ -202,12 +203,18 @@ class TestCharacter(CharacterEntity):
                     dx = 0
                 elif not wrld.wall_at(self.x + dx, self.y):
                     dy = 0
-            self.bomb(wrld)
-            self.path.clear()
-            self.move(dx, dy)
+            """
+            next = self.find_good_cell(monster, wrld)
+            if not next:
+                look_for_bombs = True
+                next = (self.x, self.y)
+            else:
+                self.bomb(wrld)
+                self.path.clear()
+                self.move(next[0]-self.x, next[1]-self.y)
+                return
 
-            return
-        if self.check_bombs(next, wrld) and look_for_bombs:
+        if look_for_bombs and (self.check_bombs(next, wrld) or (wrld.wall_at(next[0], next[1]) and self.check_bombs((self.x, self.y), wrld))):
             for i in range(-1,2):
                 for j in range(-1,2):
                     check_x = self.x + i
@@ -244,13 +251,50 @@ class TestCharacter(CharacterEntity):
         return False
 
     def check_for_monsters(self, x, y, wrld):
+        monster = None
         for i in range(-3, 4):
             for j in range(-3, 4):
                 check_x = x + i
                 check_y = y + j
                 if wrld.monsters_at(check_x, check_y):
-                    return check_x,check_y
-        return None
+                    monster = check_x,check_y
+# Check if there is a wall between you and the monster
+#        if monster:
+#            y_check = int((self.y + monster[1])/2)
+#            x_check1 = int(math.floor((self.x + monster[0])/2))
+#            x_check2 = int(math.ceil((self.x + monster[0])/2))
+#            if 0 <= x_check1 < wrld.width() and 0 <= x_check2 < wrld.width() and 0 <= y_check < wrld.height():
+#                if wrld.wall_at(x_check1, y_check) or wrld.wall_at(x_check2, y_check):
+#                    monster = None
+        return monster
+
+    def find_good_cell(self, monster, wrld):
+        furthest_dist_monster = max(abs(self.x - monster[0]), abs(self.y - monster[1]))
+        viable = []
+        for dx in range(-1,2):
+            x = self.x + dx
+            if 0 <= x < wrld.width():
+                for dy in range(-1, 2):
+                    y = self.y + dy
+                    if 0 <= y < wrld.height() and not wrld.wall_at(x,y) and not self.check_bombs((x,y),wrld):
+                        cur_dist_monster = max(abs(x-monster[0]), abs(y-monster[1]))
+                        if cur_dist_monster > furthest_dist_monster:
+                            viable.clear()
+                            furthest_dist_monster = cur_dist_monster
+                            viable.append((x,y))
+                        elif cur_dist_monster == furthest_dist_monster:
+                            viable.append((x,y))
+        best = None
+        for loc in viable:
+            if not best:
+                best = loc
+            else:
+                if abs(loc[0] - 3.5) < abs(best[0] - 3.5):
+                    best = loc
+        print(best)
+        return best
+
+
 
     def minimax(self):
         pass

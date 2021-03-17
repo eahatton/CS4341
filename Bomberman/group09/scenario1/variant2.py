@@ -12,7 +12,7 @@ from events import Event
 from datetime import datetime
 
 # TODO This is your code!
-sys.path.insert(1, '../groupNN')
+sys.path.insert(1, '../group09')
 from testcharacter import TestCharacter
 from interactivecharacter import InteractiveCharacter
 

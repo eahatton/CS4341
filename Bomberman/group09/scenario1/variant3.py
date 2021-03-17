@@ -12,7 +12,7 @@ from events import Event
 from datetime import datetime
 
 # TODO This is your code!
-sys.path.insert(1, '../groupNN')
+sys.path.insert(1, '../group09')
 from testcharacter import TestCharacter
 
 
@@ -20,7 +20,7 @@ exited = 0
 bombed = 0
 killed = 0
 
-for i in range(100):
+for i in range(1000):
     # Create the game
     random.seed(datetime.now()) # TODO Change this if you want different random choices
     g = Game.fromfile('map.txt')
