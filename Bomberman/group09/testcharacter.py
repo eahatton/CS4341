@@ -8,6 +8,12 @@ from queue import PriorityQueue
 import math
 from math import copysign
 
+STATE_SNEAK = 0
+STATE_ESCAPE = 1
+STATE_WALL_WAIT = 2
+STATE_WALL_BREAK = 3
+STATE_SURVIVE = 4
+
 class TestCharacter(CharacterEntity):
 
     
@@ -18,6 +24,11 @@ class TestCharacter(CharacterEntity):
         # (x,y) tuple for location of the exit
         self.goal = None
         self.bombs = []
+        self.toBomb = (4, 2)
+        self.newbomb_flag = 0
+        self.old_state = None
+        self.timer = -1
+        self.state = STATE_SNEAK
 
 
     """ Finds the exit of the board and returns it as a tuple"""
@@ -34,6 +45,8 @@ class TestCharacter(CharacterEntity):
             self.goal = self.find_exit(wrld)
         if self.varient == 1:
             self.astar(wrld)
+        else:
+            self.state_machine(wrld)
         pass
 
     """ Will find the path to the exit using astar. If the path has already been found it will just follow it. """
