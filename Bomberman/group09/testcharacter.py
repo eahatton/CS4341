@@ -254,4 +254,173 @@ class TestCharacter(CharacterEntity):
                     best = loc
         return best
 
+    def state_machine(self, wrld):
+        self.timer = self.timer -1
+        self.state = self.find_new_state(wrld)
 
+        print("Current State: " + str(self.state))
+        print("Timer: " + str(self.timer))
+        print("Char Pos: (" + str(self.x) + ", " + str(self.y) + ")")
+        if self.state == STATE_ESCAPE:
+            self.activate_escape(wrld)
+        if self.state == STATE_SURVIVE:
+            self.activate_survive(wrld)
+        if self.state == STATE_SNEAK:
+            self.activate_sneak(wrld)
+        if self.state == STATE_WALL_BREAK:
+            self.activate_break(wrld)
+        if self.state == STATE_WALL_WAIT:
+            self.activate_wait(wrld)
+
+    def activate_escape(self, world):
+        self.astar(world)
+
+    def activate_survive(self, world):
+        for dx in [-1, 0, 1]:
+            if (self.x + dx >= 0) and (self.x + dx < world.width()):
+                for dy in [-1, 0, 1]:
+                    if (self.y + dy >= 0) and (self.y + dy < world.height()):
+                        if (not world.wall_at(self.x + dx, self.y + dy)) and (not world.monsters_at(self.x + dx, self.y+dy)):
+                            if self.timer <= 5 and self.timer >= -1:
+                                if (self.x + dx != self.toBomb[0]) and (self.y + dy != self.toBomb[1]):
+                                    self.move(dx, dy)
+                            else:
+                                self.move(dx, dy)
+
+    def activate_sneak(self, world):
+        if self.toBomb is None:
+            dx = 0
+            x = 0
+            y = self.y
+            while y < world.height():
+                x = 0
+                while x < world.width():
+                    if not world.wall_at(x, y):
+                        dy = 1
+                        j = 1
+                        while j < 4:
+                            if world.wall_at(x, y + j*dy):
+                                self.toBomb = (x, y)
+                                print("New Bomb will be placed at (" + str(x) + ", " + str(y) + ")")
+                                if x > self.x:
+                                    dx = 1
+                                elif x == self.x:
+                                    dx = 0
+                                else:
+                                    dx = -1
+                                if y < self.y:
+                                    dy = -1
+                                elif y == self.y:
+                                    dy = 0
+                                else:
+                                    dy = 1
+                                self.move(dx, dy)
+                                return
+                            j= j+1
+                    x = x + 1
+                y = y + 1
+        else:
+            x = self.toBomb[0]
+            y = self.toBomb[1]
+            print("Bomb at (" + str(x) + ", " + str(y) + ")")
+            dx = 0
+            dy = 0
+            if x > self.x:
+                dx = 1
+            elif x == self.x:
+                dx = 0
+            else:
+                dx = -1
+            if y < self.y:
+                dy = -1
+            elif y == self.y:
+                dy = 0
+            else:
+                dy = 1
+            self.move(dx, dy)
+            return
+
+
+    def activate_break(self, world):
+        self.toBomb = (self.x, self.y)
+        self.place_bomb()
+        self.newbomb_flag = 1
+        self.activate_wait(world)
+        self.state = STATE_WALL_WAIT
+
+    def activate_wait(self, world):
+        if self.newbomb_flag:
+            self.timer = 14
+            self.newbomb_flag = 0
+        # modified from sample code on github. Link: https://github.com/eahatton/CS4341/tree/master/Bomberman
+        for dx in [-1, 0, 1]:
+            # Avoid out-of-bound indexing
+            if (self.x + dx >= 0) and (self.x + dx < world.width()):
+                # Loop through delta y
+                for dy in [-1, 0, 1]:
+                    # Avoid out-of-bound indexing
+                    if (self.y + dy >= 0) and (self.y + dy < world.height()):
+                        # No need to check impossible moves
+                        if not world.wall_at(self.x + dx, self.y + dy):
+                            if self.timer < 6 and self.timer >= 0:
+                                if ((self.x + dx != self.toBomb[0]) and (self.y + dy != self.toBomb[1])):
+                                    # Set move in wrld
+                                    self.move(dx, dy)
+                            else:
+                                self.move(dx, dy)
+        if self.timer == 0:
+            self.toBomb = None
+
+    def find_new_state(self, wrld):
+        current = self.state
+        if current == STATE_ESCAPE or self.canEscape(wrld):
+            return STATE_ESCAPE
+        if not self.isSafe(wrld):
+            if self.state != STATE_SURVIVE:
+                self.old_state = self.state
+            return STATE_SURVIVE
+        if current == STATE_SURVIVE:
+            return self.old_state
+        if current == STATE_WALL_BREAK:
+            return STATE_WALL_WAIT
+        if current == STATE_WALL_WAIT and self.timer < 0:
+            return STATE_SNEAK
+        elif current == STATE_WALL_WAIT:
+            return STATE_WALL_WAIT
+        if current == STATE_SNEAK and self.toBomb is None:
+            return STATE_SNEAK
+        if current == STATE_SNEAK and self.x == self.toBomb[0] and self.y == self.toBomb[1]:
+            return STATE_WALL_BREAK
+        else:
+            return STATE_SNEAK
+
+
+
+    def isSafe(self, world):
+        y = self.y - 2
+        while y < self.y + 2:
+            x = self.x - 2
+            while x < self.x + 2:
+                if world.monsters_at(x, y):
+                    return False
+                x = x + 1
+            y = y + 1
+        return True
+
+
+    def canEscape(self, world):
+        x = 0
+        y = 0
+        num = 0
+        while x < world.width():
+            y = 0
+            while y < world.height():
+                if world.monsters_at(x, y):
+                    if self.y - y <= 1:
+                        num = num + 1
+                y = y + 1
+            x = x + 1
+        if num == 0:
+            return True
+        else:
+            return False
