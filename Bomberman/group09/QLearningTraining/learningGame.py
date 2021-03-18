@@ -11,7 +11,7 @@ sys.path.insert(2, '../groupNN')
 import random
 from game import Game
 from events import Event
-from DNQAgent import DNQAgent
+from QLAgent import QLAgent
 from monsters.stupid_monster import StupidMonster
 from monsters.selfpreserving_monster import SelfPreservingMonster
 
@@ -36,30 +36,33 @@ class QTraining(Game):
         else:
             def step():
                 pass
-        policy = self.createEpsilonGreedyPolicy(epsilon) 
-        state = ""
+        policy = self.createEpsilonGreedyPolicy(epsilon)
+        self.world.next_decisions()
+        state, reward = self.agent.step(0)
         for t in itertools.count():
             (self.world, self.events) = self.world.next()
             if view:
                 self.draw()
             step()
-            self.world.next_decisions()
             action_probabilities = policy(state)
             action = np.random.choice(np.arange( 
                       len(action_probabilities)), 
                        p = action_probabilities) 
+            self.world.next_decisions()
             next_state, reward = self.agent.step(action)
             for event in self.events:
                 if event.tpe == Event.BOMB_HIT_CHARACTER:
                     lostFlag = True
-                    reward = -100
-                    if view:
-                        print("Our Last State: {}".format(state))
-                        print("Our Last Action: {}".format(action))
+                    reward = -10000
+                    # if view:
+                    #     print("Our Last State: {}".format(state))
+                    #     print("Our Last Action: {}".format(action))
                 elif event.tpe == Event.CHARACTER_FOUND_EXIT:
-                    reward = 100
-                elif event.tpe == Event.BOMB_HIT_MONSTER:
-                    reward = +50
+                    reward = 10000
+                    lostFlag = False
+                    # if view:
+                    #     print("Our Last State: {}".format(state))
+                    #     print("Our Last Action: {}".format(action))
             if view:
                 print(state,reward)
             best_next_action = np.argmax(self.QTable[next_state])
@@ -67,10 +70,10 @@ class QTraining(Game):
             td_delta = td_target - self.QTable[state][action]
             self.QTable[state][action] += alpha * td_delta
             if self.done():
-                break
-            state = next_state
-        self.saveQTable()
-        return lostFlag
+                self.saveQTable()
+                return lostFlag
+            else:
+                state = next_state
 
     def createEpsilonGreedyPolicy(self, epsilon):
         """
@@ -97,6 +100,8 @@ class QTraining(Game):
         with open("QTable.csv", "w", newline='') as f:
             w = csv.writer(f)
             for key, val in self.QTable.items():
+                # print("Key: {}".format(key))
+                # print("Val: {}".format(val))
                 w.writerow([key, *val])
         f.close()
 
@@ -110,32 +115,21 @@ class QTraining(Game):
         return self.QTable
 loseCount = 0
 winCount = 0
-epsilon = 0.02
-alpha = 0.9
-gamma = 0.9
+epsilon = 0.1
+alpha = 0.8
+gamma = 0.8
 episode_count = 10000
 for episode in range(episode_count):
     if episode % 100 == 0:
         print("Game: {}".format(episode))
-        if winCount / episode_count >= 0.1:
-            epsilon -= 0.005
-            alpha -= 0.025
-            gamma -=0.025
-            if epsilon < 0:
-                epsilon = 0
-            if alpha < 0.25:
-                alpha = 0.25
-            if gamma < 0.25:
-                gamma = 0.25
-            print("alpha: {}".format(alpha))
-            print("Epsilon: {}".format(epsilon))
-            print("Gamma: {}".format(gamma))
-
+        print("Lost: {}".format(loseCount))
+        print("Won: {}".format(winCount))
     g = QTraining.fromfile('map.txt')
-    agent = DNQAgent("me",
+    agent = QLAgent("me",
                         "C",
                         0,0,
                         False)
+    g.add_character(agent)
 #     g.add_monster(StupidMonster("stupid", # name
 #                             "S",      # avatar
 #                             3, 5,     # position
@@ -145,12 +139,10 @@ for episode in range(episode_count):
 #                                     3, 13,        # position
 #                                     2             # detection range
 # ))
-    g.add_character(agent)
-    if g.go(1,False, alpha=alpha,epsilon=epsilon,discount_factor=gamma):
+    if g.go(0,True, alpha=alpha,epsilon=epsilon,discount_factor=gamma):
         loseCount += 1
     else:
         winCount +=1
-
 print("Lost: {}".format(loseCount))
 print("Won: {}".format(winCount))
 print("alpha: {}".format(alpha))

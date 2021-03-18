@@ -1,17 +1,19 @@
 import sys
-sys.path.insert(0,'..bomberman')
 import random
 
+sys.path.insert(0, '../bomberman')
+# Import necessary stuff
 from entity import CharacterEntity
+from colorama import Fore, Back
 from itertools import product, starmap
 import math
 from collections import defaultdict
 import numpy as np
 import pandas as pd
 import csv
-
 random.seed(1)
-class DNQAgent(CharacterEntity):
+
+class QLAgent(CharacterEntity):
 
     def __init__(self,name,avatar,x,y,inter):
         CharacterEntity.__init__(self,name,avatar,x,y)
@@ -25,10 +27,8 @@ class DNQAgent(CharacterEntity):
         self.agentLX,self.agentLY = self.startX,self.startY
         self.exitX, self.exitY = -1,-1
         self.bombX, self.bombY = -1, -1
-        self.locations = set('0,0')
         self.inter = inter
         self.lastState = ''
-        self.lastAction = ''
         self.QTable = ""
         self.readQTable()
         self.nextAction = 0
@@ -43,6 +43,7 @@ class DNQAgent(CharacterEntity):
 
     def do(self, wrld):
         self.wrld = wrld
+        self.lastState = self.getState()
         if self.exitX == -1 and self.exitY == -1:
             self.exitX,self.exitY = self.getExitCordinates()
         if self.inter:
@@ -99,7 +100,7 @@ class DNQAgent(CharacterEntity):
         # print("In Detonation Zone: {}".format(self.inDetonationZone()))
         # print("Exit Path: {}".format(self.getExitPath()))
         # print(self.getState())
-        super(DNQAgent, self).move(dx,dy)
+        super(QLAgent, self).move(dx,dy)
         # print("Agent Old Coordinates: {} {}".format(self.agentLX, self.agentLY))
         # print("Agent Coordinates: {} {}".format(self.agentX, self.agentY))
         # print("Wall Channel: {}".format(self.getWallChannel()))
@@ -109,19 +110,18 @@ class DNQAgent(CharacterEntity):
         # print("Bomb Timer: {}".format(self.bombTimer))
         # print("Bomb Location: {}, {}".format(self.bombX,self.bombY))
         # print("State: {}".format(self.getState()))
-        self.lastState = self.getState()
         return self.getState(), self.getReward()
         #
         #     print("We Died :(")
 
     def place_bomb(self):
         reward = 0
-        super(DNQAgent, self).place_bomb()
+        super(QLAgent, self).place_bomb()
         if not self.bombPlaced:
-            reward = 10
+            reward = +1
             self.bombPlaced =  True
         else:
-            reward = -1
+            reward = -2
         return self.getState(), reward
     # Return a list of all neighbors with their cordinates, if out of bounds, the cell is (-1,-1)
 
@@ -317,19 +317,18 @@ class DNQAgent(CharacterEntity):
         # self.locations.add("{},{}".format(self.agentX,self.agentY))
         # if "{},{}".format(self.agentX,self.agentY) in self.locations:
         #     return -1
-        cur_Distance = self.getDistance(self.agentX,self.agentY,self.exitX,self.exitY)
-        last_Distance = self.getDistance(self.agentLX,self.agentLY,self.exitX,self.exitY)
-        if self.agentLX == self.agentX and self.agentLY == self.agentY:
-            return -1
+        
+        cur_Distance = math.ceil(self.getDistance(self.agentX,self.agentY,self.exitX,self.exitY))
+        last_Distance = math.ceil(self.getDistance(self.agentLX,self.agentLY,self.exitX,self.exitY))
+        # print("Cur Distance: {}".format(cur_Distance))
+        # print("Last Distance: {}".format(last_Distance))
+        if last_Distance == cur_Distance:
+            return -2
         elif cur_Distance > last_Distance:
-            # if "{},{}".format(self.agentX,self.agentY) in self.locations:
-            #     return -2
-            # else:
-                return -1
+            return -2
         elif cur_Distance < last_Distance:
             return 1
-        else:
-            return -1
+
     
     def rewardAtWall(self):
         dx,dy = self.getExitPath()
@@ -425,6 +424,7 @@ class DNQAgent(CharacterEntity):
             for key, val in self.QTable.items():
                 w.writerow([key, *val])
         f.close()
+
 
     def readQTable(self,file="QTable.csv"):
         self.QTable = defaultdict(lambda: np.zeros(10))
