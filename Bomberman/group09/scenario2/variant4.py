@@ -31,8 +31,7 @@ for i in range(1000):
     # TODO Add your character
     g.add_character(TestCharacter("me", # name
                                   "C",  # avatar
-                                  0, 0,  # position
-                                    1
+                                  0, 0  # position
                                   ))
     
     # Run!

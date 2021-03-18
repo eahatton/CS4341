@@ -11,7 +11,7 @@ from math import copysign
 class TestCharacter(CharacterEntity):
 
     
-    def __init__(self, name, avatar, x, y, varient):
+    def __init__(self, name, avatar, x, y, varient = 1):
         CharacterEntity.__init__(self, name, avatar, x, y)
         self.varient = varient
         self.path = []
@@ -20,31 +20,30 @@ class TestCharacter(CharacterEntity):
         self.bombs = []
 
 
+    """ Finds the exit of the board and returns it as a tuple"""
     def find_exit(self, wrld):
         for i in range(wrld.width()):
             for j in range(wrld.height()):
                 if wrld.exit_at(i,j):
                     return (i,j)
 
-
+    """ Takes the turn of the character. Uses the specified method with varient"""
     def do(self, wrld):
         # Your code here
         if self.goal is None:
             self.goal = self.find_exit(wrld)
         if self.varient == 1:
             self.astar(wrld)
-        elif self.varient == 2:
-            self.minimax()
-        elif self.varient >= 3:
-            self.expectimax()
         pass
 
-
+    """ Will find the path to the exit using astar. If the path has already been found it will just follow it. """
     def astar(self, wrld):
+        # Path already found, follow it
         if len(self.path) > 0:
             self.smart_follow(wrld)
+        # Path hasn't been found, or was erased due to smart_follow, find it
+        # Truely is a basic boring A*
         else:
-            print("Need to find a new path")
             frontier = PriorityQueue()
             # priority queue will be (priority,(x,y))
             frontier.put((0,(self.x,self.y)))
@@ -76,9 +75,11 @@ class TestCharacter(CharacterEntity):
                                     priority = new_cost + self.diag_dist(wrld, next)
                                     frontier.put((priority, (next[0], next[1])))
                                     came_from[next] = current
+            # We got to the exit, make a path from the current location to the exit and follow it
             if reached_goal:
                 self.create_path(came_from)
                 self.smart_follow(wrld)
+            # Didn't get to the exit (walls blocking). Make and follow a path to the location closest to the exit and then place a bomb
             else:
                 closest = self.closest_reached(came_from, wrld)
                 self.create_path_dest(came_from,(self.x,self.y),closest)
@@ -90,36 +91,35 @@ class TestCharacter(CharacterEntity):
     def diag_dist(self, wrld, loc):
         return max(abs(loc[0]-wrld.width()-1), abs(loc[1]-wrld.height()-1))
 
-
+    
+    """ Creates a path for the character to follow to the exit.  Uses the came_from dictionary from astar """
     def create_path(self, came_from):
         next = self.goal
+        # Continue making path backwards until we get to current location
         while next != (self.x, self.y):
+            # Starting with exit and working to current location, so we need to insert at the front of the list
             self.path.insert(0,next)
             next = came_from[next]
-            # if len(self.path) > 1 and (self.path[0] != "bomb" and self.path[1] != "bomb"):
-            #     old_dx = self.path[1][0] - self.path[0][0]
-            #     cur_dx = self.path[0][0] - next[0]
-            #     print(old_dx, cur_dx)
-            #     if old_dx != cur_dx:
-            #         self.path.insert(0,"bomb")
-        
-
+                    
+    """ Follows the path self.path by taking the first element in the list as the next location to goto and remove it from the list """
     def follow_path(self, wrld):
-        next = self.path[0]
-        self.path.remove(next)
-        if next != "bomb":
-            self.move(next[0]-self.x, next[1]-self.y)
-        elif len(self.bombs) == 0:
-            # Going to place bomb, want to move out of blast zone
-            # Need to stay out for bomb_time + expl_duration + 1 because wall is removed as expl ends
-            for i in range(wrld.bomb_time + wrld.expl_duration + 2):
-               if(self.x != 0):
-                    self.path.append((self.x-1, self.y-1))
-               else:
-                   self.path.append((self.x+1, self.y-1))
-            self.bomb(wrld)
+        if len(self.path) > 0:
+            next = self.path[0]
+            self.path.remove(next)
+            # Next thing in the list is a location, go there
+            if next != "bomb":
+                self.move(next[0]-self.x, next[1]-self.y)
+            elif len(self.bombs) == 0:
+                # Going to place bomb, want to move out of blast zone
+                # Need to stay out for bomb_time + expl_duration + 1 because wall is removed as expl ends
+                for i in range(wrld.bomb_time + wrld.expl_duration + 2):
+                   if(self.x != 0):
+                        self.path.append((self.x-1, self.y-1))
+                   else:
+                       self.path.append((self.x+1, self.y-1))
+                self.bomb(wrld)
 
-
+    """ Finds the location (x,y) that is closest to the exit. """
     def closest_reached(self, came_from, wrld):
         visited = came_from.keys()
         closest = None
@@ -131,107 +131,70 @@ class TestCharacter(CharacterEntity):
                 closest = loc
         return closest
 
-
+    
+    """ Creates a path from start to end using came_from dictionary created in astar """
     def create_path_dest(self, came_from, start, end):
         next = end
         while next != start:
             self.path.insert(0,next)
             next = came_from[next]
 
-
+    
+    """ Takes the next location in the path, it will look around for monsters and explosions 
+        and act in a way that will prevent it from dying.  If there is nothing wrong with where we want to go then
+        we will follow it like the board were empty using follow_path() above.  If the next step is to place 
+        a bomb one is place where the character is and it then checks its surroundings to see if its 
+        current location is safe to stay at. """
     def smart_follow(self, wrld):
         self.update_bombs()
         next = self.path[0]
+        # Next thing to do is place a bomb, do it
         if next == "bomb":
-            self.follow_path(wrld)
-            return
+            self.path.remove(next)
+            self.bomb(wrld)
+            next = (self.x, self.y)
         look_for_bombs = True
         dx = next[0] - self.x
         dy = next[1] - self.y
+        # Find any monsters around the location we want to move to
         monster = self.check_for_monsters(next[0], next[1], wrld)
-        print(monster)
+        # If there is one we need to find a different place to go
         if monster:
-            # look_for_bombs = False
-            # self.path.clear()
-            # # There is a monster too close to where I want to go
-            # # look 1 around where I currently am for the spot closest to the exit
-            # # that is at least 3 from the monster, and isn't a wall or out of bounds
-            # closest = sys.maxsize
-            # direction = (int(copysign(1,self.x - monster[0])),int(copysign(1,self.y-monster[1])))
-            # for i in range(-1,2):
-            #     if 0 <= self.x + i < wrld.width():
-            #         for j in range(-1, 2):
-            #             if 0 <= self.y + j < wrld.height() and not wrld.wall_at(self.x + i, self.y + j) and \
-            #                     not self.check_bombs((self.x+i, self.y+j), wrld):
-            #                 new_dist = self.diag_dist(wrld, (self.x + i, self.y + j))
-            #                 dist_to_monster = max(abs(self.x - monster[0]), abs(self.y - monster[1]))
-            #                 print("Dist to Monster:", dist_to_monster)
-            #                 print("Dist to exit:", new_dist)
-            #                 if dist_to_monster >= 4 and new_dist < closest:
-            #                     direction = (i,j)
-            """
-            if self.y - monster[1] != 0:
-                dx = int(copysign(1,3.5-self.x))
-            else:
-                dx = int(copysign(1,self.x - monster[0]))
-            dy = int(copysign(1,self.y - monster[1]))
-            # Make sure we are moving and not just pushing against a wall
-            if self.x + dx < 0 or self.x + dx >= wrld.width():
-                dx = 0
-            if self.y + dy < 0 or self.y + dy >= wrld.height():
-                dx = int(copysign(1, self.x - monster[0]))
-                dy = 0
-            # Check if monster is pushing you into an explosion
-            if self.check_bombs((self.x + dx, self.y + dy), wrld): # and not wrld.wall_at(self.x + dx, self.y + dy):
-                if not self.check_bombs((self.x, self.y + dy), wrld):
-                    dx = 0
-                elif not self.check_bombs((self.x + dx, self.y), wrld):
-                    dy = 0
-                else:
-                    dx = 0
-                    dy = 0
-                if self.check_bombs((self.x, self.y), wrld):
-                    dx = -dx
-                    dy = -dy
-           
-            if self.x + dx < 0 or self.x + dx >= wrld.width():
-                dx = 0
-            if self.y + dy < 0 or self.y + dy >= wrld.height():
-                dy = 0
-            if wrld.wall_at(self.x + dx, self.y + dy):
-                if not wrld.wall_at(self.x, self.y + dy):
-                    dx = 0
-                elif not wrld.wall_at(self.x + dx, self.y):
-                    dy = 0
-            """
+            # The best place to go. If it doesn't exist stay here and excpet fait
             next = self.find_good_cell(monster, wrld)
             if not next:
                 look_for_bombs = True
                 next = (self.x, self.y)
+            # we will drop a bomb to try and kill monster and move to the spot found
             else:
                 self.bomb(wrld)
                 self.path.clear()
                 self.move(next[0]-self.x, next[1]-self.y)
                 return
-
+        # If there isn't a monster near we need to check for explosions in our next location
         if look_for_bombs and (self.check_bombs(next, wrld) or (wrld.wall_at(next[0], next[1]) and self.check_bombs((self.x, self.y), wrld))):
             for i in range(-1,2):
                 for j in range(-1,2):
                     check_x = self.x + i
                     check_y = self.y + j
+                    # Check to see if (check_x, check_y) is on the board
                     if check_x >= 0 and check_x < wrld.width() and check_y >= 0 and check_y < wrld.height() and \
                             not wrld.wall_at(check_x, check_y):
+                        # If the location (check_x, check_y) is not in an explosion go there
                         if not self.check_bombs((check_x, check_y), wrld):
                             self.path.clear()
                             self.move(i,j)
                             return
+        # We didn't find any problems with our next location so follow our initial path
         self.follow_path(wrld)
 
+    # Places a bomb and adds it to the list of bombs
     def bomb(self, wrld):
         if len(self.bombs) == 0:
             self.bombs.append((self.x, self.y, wrld.bomb_time))
             self.place_bomb()
 
+    # Updates the counter on all of the bombs in the bomb list
     def update_bombs(self):
         if len(self.bombs) > 0:
             old_bomb = self.bombs[0]
@@ -239,6 +202,7 @@ class TestCharacter(CharacterEntity):
             if self.bombs[0][2] < -3:
                 self.bombs.clear()
 
+    """ Checks the location next to see if it will be where a bomb is going to or is currently exploding """
     def check_bombs(self, next, wrld):
         if not (len(self.bombs) > 0):
             return False
@@ -250,24 +214,21 @@ class TestCharacter(CharacterEntity):
             return True
         return False
 
+    """ Checks for monsters within 4 cells of the loction (x,y).  If there is one it returns the tuple location of that monster
+        if there isn't a monster return null """
     def check_for_monsters(self, x, y, wrld):
         monster = None
-        for i in range(-3, 4):
-            for j in range(-3, 4):
+        for i in range(-4, 5):
+            for j in range(-4, 5):
                 check_x = x + i
                 check_y = y + j
                 if wrld.monsters_at(check_x, check_y):
                     monster = check_x,check_y
-# Check if there is a wall between you and the monster
-#        if monster:
-#            y_check = int((self.y + monster[1])/2)
-#            x_check1 = int(math.floor((self.x + monster[0])/2))
-#            x_check2 = int(math.ceil((self.x + monster[0])/2))
-#            if 0 <= x_check1 < wrld.width() and 0 <= x_check2 < wrld.width() and 0 <= y_check < wrld.height():
-#                if wrld.wall_at(x_check1, y_check) or wrld.wall_at(x_check2, y_check):
-#                    monster = None
         return monster
 
+    """ Finds the best cell to move to if there is a monster near by.  Does so by finding the cell that is the furthest from the monster
+        and closest to the middle.  We go as far from the monster as possible because the worst thing that can happen is we die, 
+        we go to the middle because there will be less of a chance that we get caught in a corner."""
     def find_good_cell(self, monster, wrld):
         furthest_dist_monster = max(abs(self.x - monster[0]), abs(self.y - monster[1]))
         viable = []
@@ -291,15 +252,6 @@ class TestCharacter(CharacterEntity):
             else:
                 if abs(loc[0] - 3.5) < abs(best[0] - 3.5):
                     best = loc
-        print(best)
         return best
-
-
-
-    def minimax(self):
-        pass
-
-    def expectimax(self):
-        pass
 
 
