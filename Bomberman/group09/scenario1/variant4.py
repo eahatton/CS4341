@@ -19,7 +19,7 @@ bombed = 0
 killed = 0
 exited = 0
 
-for i in range(1000):
+for i in range(10):
     # Create the game
     random.seed(datetime.now()) # TODO Change this if you want different random choices
     g = Game.fromfile('map.txt')

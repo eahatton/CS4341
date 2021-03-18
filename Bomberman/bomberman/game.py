@@ -93,7 +93,7 @@ class Game:
     def go(self, wait=0):
         """ Main game loop. """
 
-        if wait is 0:
+        if wait == 0:
             def step():
                 pygame.event.clear()
                 input("Press Enter to continue or CTRL-C to stop...")
@@ -105,6 +105,7 @@ class Game:
         self.display_gui()
         self.draw()
         step()
+        pygame.image.save(self.screen,"screenshot.jpg")
         while not self.done():
             (self.world, self.events) = self.world.next()
             self.display_gui()
